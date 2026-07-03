@@ -1,26 +1,279 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+    --background: #f8fafc;
+    --foreground: #0f172a;
+    --card: #ffffff;
+    --card-foreground: #0f172a;
+    --popover: #ffffff;
+    --popover-foreground: #0f172a;
+    --primary: #6366f1;
+    --primary-foreground: #f8fafc;
+    --secondary: #f1f5f9;
+    --secondary-foreground: #0f172a;
+    --muted: #f1f5f9;
+    --muted-foreground: #64748b;
+    --accent: #8b5cf6;
+    --accent-foreground: #f8fafc;
+    --destructive: #dc2626;
+    --border: #e2e8f0;
+    --input: #e2e8f0;
+    --ring: #6366f1;
+    --radius: 0.5rem;
+    --sidebar: #1e293b;
+    --sidebar-foreground: #f8fafc;
+    --sidebar-primary: #6366f1;
+    --sidebar-primary-foreground: #f8fafc;
+    --sidebar-accent: #334155;
+    --sidebar-accent-foreground: #f8fafc;
+    --sidebar-border: rgb(255 255 255 / 0.1);
+    --sidebar-ring: #6366f1;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --font-sans: var(--font-sans);
+    --font-mono: var(--font-geist-mono);
+    --font-heading: var(--font-sans);
+    --color-sidebar-ring: var(--sidebar-ring);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar: var(--sidebar);
+    --color-chart-5: var(--chart-5);
+    --color-chart-4: var(--chart-4);
+    --color-chart-3: var(--chart-3);
+    --color-chart-2: var(--chart-2);
+    --color-chart-1: var(--chart-1);
+    --color-ring: var(--ring);
+    --color-input: var(--input);
+    --color-border: var(--border);
+    --color-destructive: var(--destructive);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-accent: var(--accent);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-muted: var(--muted);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-secondary: var(--secondary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-primary: var(--primary);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-popover: var(--popover);
+    --color-card-foreground: var(--card-foreground);
+    --color-card: var(--card);
+    --radius-sm: calc(var(--radius) * 0.6);
+    --radius-md: calc(var(--radius) * 0.8);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) * 1.4);
+    --radius-2xl: calc(var(--radius) * 1.8);
+    --radius-3xl: calc(var(--radius) * 2.2);
+    --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/* Dark mode via classe .dark (voir @custom-variant dark ci-dessus) */
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+    background: var(--background);
+    color: var(--foreground);
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+/* ─── Components ──────────────────────────────────────────── */
+
+@layer components {
+    /* Buttons */
+    .btn-primary {
+        @apply inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 disabled:pointer-events-none bg-primary text-primary-foreground hover:bg-primary/90;
+    }
+    .btn-secondary {
+        @apply inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 disabled:pointer-events-none bg-secondary text-secondary-foreground hover:bg-secondary/80;
+    }
+    .btn-ghost {
+        @apply inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 disabled:pointer-events-none hover:bg-accent hover:text-accent-foreground;
+    }
+
+    /* Cards */
+    .card {
+        @apply rounded-xl border border-border bg-card text-card-foreground p-6 shadow-sm;
+    }
+    .card-header {
+        @apply mb-4 flex items-center justify-between;
+    }
+
+    /* Forms */
+    .input {
+        @apply w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent;
+    }
+    .label {
+        @apply block text-sm font-medium text-foreground mb-1;
+    }
+
+    /* Typography */
+    .heading-1 {
+        @apply text-3xl font-bold tracking-tight text-foreground;
+    }
+    .heading-2 {
+        @apply text-2xl font-semibold text-foreground;
+    }
+    .text-muted {
+        @apply text-sm text-muted-foreground;
+    }
+
+    /* Layout */
+    .page-container {
+        @apply mx-auto max-w-7xl px-4 sm:px-6 lg:px-8;
+    }
+
+    /* Auth layout — Web + PWA
+     * - min-height: 100vh fallback pour les vieux navigateurs desktop, 100dvh pour mobile PWA
+     * - justify-content: center fallback, puis safe center (évite la coupure en haut sur mobile)
+     * - safe-area-inset-* pour iOS (encoche, home indicator, paysage)
+     * - padding plus généreux sur desktop (lg+)
+     */
+    .auth-layout {
+        @apply flex flex-col items-center overflow-y-auto;
+        min-height: 100vh;
+        min-height: 100dvh;
+        background: rgb(248, 250, 252);
+        justify-content: center;
+        justify-content: safe center;
+        padding-top: max(2rem, env(safe-area-inset-top, 0px));
+        padding-bottom: max(2rem, env(safe-area-inset-bottom, 0px));
+        padding-left: max(1rem, env(safe-area-inset-left, 0px));
+        padding-right: max(1rem, env(safe-area-inset-right, 0px));
+
+        @media (min-width: 1024px) {
+            padding-top: 5rem;
+            padding-bottom: 5rem;
+            padding-left: 2rem;
+            padding-right: 2rem;
+        }
+    }
+
+    /* Dashboard shell — PWA ready */
+    .dashboard-header {
+        @apply fixed top-0 left-0 right-0 z-30 bg-background border-b border-border;
+        padding-top: env(safe-area-inset-top, 0px);
+    }
+    .dashboard-header-inner {
+        @apply flex h-16 items-center justify-between px-4;
+    }
+
+    .dashboard-sidebar {
+        @apply fixed left-0 bottom-0 z-20 w-64 flex-col bg-sidebar border-r border-sidebar-border overflow-y-auto;
+        display: none;
+        top: calc(4rem + env(safe-area-inset-top, 0px));
+        padding-left: env(safe-area-inset-left, 0px);
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    .dashboard-main {
+        @apply bg-muted/40;
+        min-height: 100dvh;
+        padding-top: calc(4rem + env(safe-area-inset-top, 0px) + 1.5rem);
+        padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px) + 1.5rem);
+        padding-left: max(1.5rem, env(safe-area-inset-left, 0px));
+        padding-right: max(1.5rem, env(safe-area-inset-right, 0px));
+    }
+
+    /* Bottom nav — mobile uniquement */
+    .bottom-nav {
+        @apply fixed bottom-0 left-0 right-0 z-30 flex bg-background border-t border-border;
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+        padding-left: env(safe-area-inset-left, 0px);
+        padding-right: env(safe-area-inset-right, 0px);
+    }
+    .bottom-nav-item {
+        @apply flex flex-col items-center justify-center gap-1 flex-1 h-16 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground;
+    }
+    .bottom-nav-item-active {
+        @apply text-foreground;
+    }
+
+    /* Sidebar nav */
+    .nav-item {
+        @apply relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground;
+        color: rgb(248 250 252 / 0.7);
+    }
+    .nav-item-active {
+        @apply text-sidebar-primary hover:text-sidebar-primary;
+        background-color: color-mix(in srgb, var(--sidebar-primary) 15%, transparent);
+
+        &::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 20%;
+            bottom: 20%;
+            width: 3px;
+            background-color: var(--sidebar-primary);
+            border-radius: 8px;
+        }
+    }
+
+    @media (min-width: 1024px) {
+        .dashboard-sidebar {
+            display: flex;
+            flex-direction: column;
+        }
+        .dashboard-main {
+            margin-left: 16rem;
+            padding-top: calc(4rem + env(safe-area-inset-top, 0px) + 2rem);
+            padding-bottom: 2rem;
+            padding-left: 2rem;
+            padding-right: 2rem;
+        }
+        .bottom-nav {
+            display: none;
+        }
+    }
+}
+
+.dark {
+    --background: #0f1629;
+    --foreground: #f8fafc;
+    --card: #131c35;
+    --card-foreground: #f8fafc;
+    --popover: #131c35;
+    --popover-foreground: #f8fafc;
+    --primary: #6366f1;
+    --primary-foreground: #f8fafc;
+    --secondary: #1e2d4d;
+    --secondary-foreground: #f8fafc;
+    --muted: #1e2d4d;
+    --muted-foreground: #94a3b8;
+    --accent: #8b5cf6;
+    --accent-foreground: #f8fafc;
+    --destructive: #ef4444;
+    --border: #1e2d4d;
+    --input: #1e2d4d;
+    --ring: #6366f1;
+    --sidebar: #0a1020;
+    --sidebar-foreground: #f8fafc;
+    --sidebar-primary: #6366f1;
+    --sidebar-primary-foreground: #f8fafc;
+    --sidebar-accent: #1e293b;
+    --sidebar-accent-foreground: #f8fafc;
+    --sidebar-border: rgb(255 255 255 / 0.1);
+    --sidebar-ring: #6366f1;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    }
+  body {
+    @apply bg-background text-foreground;
+    }
+  html {
+    @apply font-sans;
+    }
 }
