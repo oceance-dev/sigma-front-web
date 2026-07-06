@@ -4,6 +4,7 @@ import type { NextConfig } from "next";
 const isDev = process.env.NODE_ENV === 'development'
 
 const nextConfig: NextConfig = {
+  output: 'standalone',
   allowedDevOrigins: [
     "192.168.*.*", // réseaux domestiques typiques
     "10.*.*.*",    // réseaux d'entreprise / VPN
