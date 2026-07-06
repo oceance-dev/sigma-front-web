@@ -12,9 +12,8 @@ services:
     ports:
       - "3000:3000"
     restart: unless-stopped
-    networks:
-      - sigma-adonisjs_default
-
-networks:
-  sigma-adonisjs_default:
-    external: true
+    environment:
+      NODE_ENV: production
+      # API_URL : injectée au runtime — pas besoin de rebuilder l'image si l'URL change
+      API_URL: ${API_URL}
+      NEXT_PUBLIC_API_URL=http://72.60.215.156/sigma-adonisjs/v1

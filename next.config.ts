@@ -26,7 +26,9 @@ const nextConfig: NextConfig = {
     "172.31.*.*",
   ],
   async rewrites() {
-    const apiBase = process.env.NEXT_PUBLIC_API_URL ?? ''
+    // API_URL est une var runtime (non-NEXT_PUBLIC_) : modifiable sans rebuild.
+    // Fallback sur NEXT_PUBLIC_API_URL pour la compatibilité dev local.
+    const apiBase = process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? ''
     return [
       {
         source: '/api/sigma/:path*',
@@ -35,7 +37,15 @@ const nextConfig: NextConfig = {
     ]
   },
   async headers() {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? ''
+    // NEXT_PUBLIC_API_HOST = domaine public (ex: https://sigma-saas.cloud)
+    // utilisé uniquement pour le CSP côté browser.
+    // Si absent, le browser n'a besoin que de 'self' car tout passe par /api/sigma/*
+    const apiHost = process.env.NEXT_PUBLIC_API_HOST ?? ''
+    const connectSrc = ['self', apiHost, 'https://geo.api.gouv.fr']
+      .filter(Boolean)
+      .map(v => v === 'self' ? "'self'" : v)
+      .join(' ')
+
     return [
       {
         source: "/(.*)",
@@ -51,8 +61,9 @@ const nextConfig: NextConfig = {
               `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''}`,
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob:",
-              `connect-src 'self' ${apiUrl}`,
+              `connect-src ${connectSrc}`,
               "font-src 'self'",
+              "worker-src 'self' blob:",
               "frame-ancestors 'none'",
             ].join('; '),
           },
