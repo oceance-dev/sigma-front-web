@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { PasswordInput } from '@/components/PasswordInput'
 import { useAuth } from '@/src/context/auth-context'
 
 function LoginForm() {
@@ -82,10 +83,9 @@ function LoginForm() {
                   Mot de passe oublié ?
                 </a>
               </div>
-              <Input
+              <PasswordInput
                 id="password"
                 name="password"
-                type="password"
                 required
                 disabled={isPending}
                 autoComplete="current-password"
@@ -93,7 +93,7 @@ function LoginForm() {
             </div>
           </div>
         </CardContent>
-        <CardFooter className="flex-col gap-3">
+        <CardFooter className="flex-col gap-3 pt-6">
           <Button type="submit" className="w-full" disabled={isPending}>
             {isPending ? 'Connexion…' : 'Se connecter'}
           </Button>

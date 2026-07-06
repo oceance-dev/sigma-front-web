@@ -542,23 +542,23 @@ export default function DocumentPage() {
           <div className="flex items-center gap-2 shrink-0">
             {/* Toggle vue */}
             <div className="flex rounded-lg border border-border overflow-hidden">
-              <button onClick={() => setViewMode('list')}
+              <button onClick={() => setViewMode('list')} title="Vue liste"
                 className={`flex h-9 w-9 items-center justify-center transition-colors ${viewMode === 'list' ? 'bg-primary text-white' : 'text-muted-foreground hover:bg-accent'}`}>
                 <List size={16} />
               </button>
-              <button onClick={() => setViewMode('grid')}
+              <button onClick={() => setViewMode('grid')} title="Vue grille"
                 className={`flex h-9 w-9 items-center justify-center transition-colors ${viewMode === 'grid' ? 'bg-primary text-white' : 'text-muted-foreground hover:bg-accent'}`}>
                 <Grid2x2 size={16} />
               </button>
             </div>
 
-            <Button variant="secondary" onClick={() => setShowCreateFolder(true)} disabled={isLoading} className="flex items-center gap-2">
+            <Button variant="secondary" onClick={() => setShowCreateFolder(true)} disabled={isLoading} title="Nouveau dossier" className="flex items-center gap-2">
               <Folder size={15} />
-              Nouveau dossier
+              <span className="hidden sm:inline">Nouveau dossier</span>
             </Button>
-            <Button onClick={() => setShowUpload(true)} disabled={isLoading} className="flex items-center gap-2">
+            <Button onClick={() => setShowUpload(true)} disabled={isLoading} title="Ajouter un document" className="flex items-center gap-2">
               <Plus size={15} />
-              Ajouter un document
+              <span className="hidden sm:inline">Ajouter un document</span>
             </Button>
           </div>
         </div>

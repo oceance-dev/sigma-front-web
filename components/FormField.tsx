@@ -1,8 +1,8 @@
 import type { FieldConfig as FormFieldType } from "@/src/types/form";
 import React, { useState } from "react";
-import { Eye, EyeOff } from "lucide-react";
 import { Label } from "./ui/label";
 import { Input } from "./ui/input";
+import { PasswordInput } from "./PasswordInput";
 import { pwStrength } from "@/src/lib/password-validation";
 
 interface FormFieldProps {
@@ -18,8 +18,6 @@ export const FormField: React.FC<FormFieldProps> = ({
   error,
   disabled,
 }) => {
-  const [showPassword, setShowPassword] = useState(false);
-
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) => {
@@ -91,28 +89,17 @@ export const FormField: React.FC<FormFieldProps> = ({
         </label>
       ) : field.type === "password" ? (
         <>
-          <div className="relative">
-            <Input
-              id={field.name}
-              name={field.name}
-              type={showPassword ? "text" : "password"}
-              value={currentValue}
-              onChange={handleChange}
-              placeholder={field.placeholder}
-              className={`${inputClass} pr-10`}
-              required={field.required}
-              disabled={disabled}
-              autoComplete="new-password"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword((v) => !v)}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              tabIndex={-1}
-            >
-              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-            </button>
-          </div>
+          <PasswordInput
+            id={field.name}
+            name={field.name}
+            value={currentValue}
+            onChange={handleChange}
+            placeholder={field.placeholder}
+            className={inputClass}
+            required={field.required}
+            disabled={disabled}
+            autoComplete="new-password"
+          />
           {field.showStrengthCheck && currentValue.length > 0 && (() => {
             const checks = pwStrength(currentValue);
             return (

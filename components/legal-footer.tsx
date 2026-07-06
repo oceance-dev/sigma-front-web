@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 
-const SUPPORT_EMAIL = 'support@sigma-app.fr'
+const SUPPORT_EMAIL = 'contact.sigma.cloud@gmail.com'
 
 export function LegalFooter({ className }: { className?: string }) {
   return (

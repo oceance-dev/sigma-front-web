@@ -14,9 +14,9 @@ export default function ConfidentialitePage() {
         <h2 className="text-base font-semibold mb-3">1. Responsable du traitement</h2>
         <p>
           Le responsable du traitement des données personnelles collectées via SIGMA est{' '}
-          <strong>[NOM DE LA SOCIÉTÉ]</strong>, [forme juridique], dont le siège est situé au [ADRESSE].
+          <strong>OceDev</strong>, Entreprise Individuelle (EI), dont le siège est situé au 14 T rue colbert, bâtiment A, appartement 102.
           <br />
-          Contact : <a href="mailto:[EMAIL DPO ou CONTACT RGPD]" className="text-primary underline underline-offset-4">[EMAIL DPO ou CONTACT RGPD]</a>
+          Contact : <a href="mailto:contact.sigma.cloud@gmail.com" className="text-primary underline underline-offset-4">contact.sigma.cloud@gmail.com</a>
         </p>
       </section>
 
@@ -90,9 +90,9 @@ export default function ConfidentialitePage() {
           strictement nécessaires au fonctionnement du service :
         </p>
         <ul className="list-disc pl-5 mt-2 space-y-1">
-          <li><strong>Hébergement</strong> : [NOM HÉBERGEUR], infrastructure sécurisée en [UE / France] ;</li>
+          <li><strong>Hébergement</strong> : Hostinger International Ltd., infrastructure sécurisée en UE ;</li>
           <li><strong>Paiement</strong> : Stripe, Inc. — certifié PCI-DSS ;</li>
-          <li><strong>Emails transactionnels</strong> : [NOM FOURNISSEUR EMAIL, ex. Postmark / Brevo].</li>
+          <li><strong>Emails transactionnels</strong> : Resend (resend.com).</li>
         </ul>
         <p className="mt-2">
           Nous ne vendons, ne louons et ne cédons jamais vos données à des tiers à des fins commerciales.
@@ -121,8 +121,8 @@ export default function ConfidentialitePage() {
         </ul>
         <p className="mt-3">
           Pour exercer ces droits, contactez-nous à{' '}
-          <a href="mailto:[EMAIL DPO ou CONTACT RGPD]" className="text-primary underline underline-offset-4">
-            [EMAIL DPO ou CONTACT RGPD]
+          <a href="mailto:contact.sigma.cloud@gmail.com" className="text-primary underline underline-offset-4">
+            contact.sigma.cloud@gmail.com
           </a>
           . Nous répondons dans un délai d'un mois (RGPD Art. 12).
           <br />

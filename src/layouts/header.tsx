@@ -98,7 +98,7 @@ export default function Header() {
                 {/* Support */}
                 <div className="p-1 border-t border-border">
                   <a
-                    href="mailto:support@sigma-app.fr"
+                    href="mailto:contact.sigma.cloud@gmail.com"
                     className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
                   >
                     <HelpCircle size={15} className="text-muted-foreground" />

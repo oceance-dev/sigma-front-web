@@ -14,7 +14,7 @@ export default function CguPage() {
         <h2 className="text-base font-semibold mb-3">1. Objet</h2>
         <p>
           Les présentes Conditions Générales d'Utilisation (CGU) régissent l'accès et l'utilisation
-          de la plateforme SIGMA, service de gestion associative en ligne édité par [NOM DE LA SOCIÉTÉ]
+          de la plateforme SIGMA, service de gestion associative en ligne édité par OceDev
           (ci-après « l'Éditeur »). Toute utilisation du service implique l'acceptation pleine et
           entière des présentes CGU.
         </p>
@@ -115,8 +115,8 @@ export default function CguPage() {
         <h2 className="text-base font-semibold mb-3">11. Contact</h2>
         <p>
           Pour toute question relative aux présentes CGU :{' '}
-          <a href="mailto:[EMAIL CONTACT]" className="text-primary underline underline-offset-4">
-            [EMAIL CONTACT]
+          <a href="mailto:contact.sigma.cloud@gmail.com" className="text-primary underline underline-offset-4">
+            contact.sigma.cloud@gmail.com
           </a>
         </p>
       </section>
