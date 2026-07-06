@@ -1,21 +1,20 @@
-FROM node:22-alpine AS base
+# ==========================================
+# Stage 1: Build
+# ==========================================
+FROM node:22-alpine AS builder
 
-# ── Stage 1 : dépendances ─────────────────────────────────────
-FROM base AS deps
-RUN apk add --no-cache libc6-compat
 WORKDIR /app
+
+RUN apk add --no-cache libc6-compat
+
+# Install dependencies
 COPY package.json package-lock.json ./
 RUN npm ci
 
-# ── Stage 2 : build ───────────────────────────────────────────
-FROM base AS builder
-WORKDIR /app
-
-COPY --from=deps /app/node_modules ./node_modules
+# Copy source code
 COPY . .
 
-# NEXT_PUBLIC_* sont baked dans le bundle client au moment du build.
-# Elles doivent être passées en --build-arg (voir docker-compose.yml).
+# Build args baked dans le bundle client au moment du build
 ARG NEXT_PUBLIC_API_URL
 ARG NEXT_PUBLIC_SENTRY_DSN
 ARG SENTRY_AUTH_TOKEN
@@ -28,8 +27,11 @@ ENV NODE_ENV=production
 
 RUN npm run build
 
-# ── Stage 3 : image de production ─────────────────────────────
-FROM base AS runner
+# ==========================================
+# Stage 2: Run
+# ==========================================
+FROM node:22-alpine AS runner
+
 WORKDIR /app
 
 ENV NODE_ENV=production
@@ -48,6 +50,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 USER nextjs
+
 EXPOSE 3000
 
 CMD ["node", "server.js"]

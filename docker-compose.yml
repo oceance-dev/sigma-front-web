@@ -2,26 +2,19 @@ services:
   sigma-web:
     build:
       context: .
+      dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
         NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN:-}
         SENTRY_AUTH_TOKEN: ${SENTRY_AUTH_TOKEN:-}
     image: sigma-web:latest
-    expose:
-      - "3000"
-    restart: unless-stopped
-    environment:
-      NODE_ENV: production
-
-  nginx:
-    image: nginx:alpine
+    container_name: sigma-web
     ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
-      - /etc/letsencrypt:/etc/letsencrypt:ro
-      - /var/www/certbot:/var/www/certbot:ro
-    depends_on:
-      - sigma-web
+      - "3000:3000"
     restart: unless-stopped
+    networks:
+      - sigma-adonisjs_default
+
+networks:
+  sigma-adonisjs_default:
+    external: true
