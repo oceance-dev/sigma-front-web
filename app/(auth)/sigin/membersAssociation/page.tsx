@@ -100,7 +100,7 @@ export default function MemberInscription() {
           passwordConfirmation: fd.get('confirmPassword') as string,
         }
 
-        const res = await fetch('/api/sigma/register/member', {
+        const res = await fetch('/api/sigma/register/member-association', {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
           body:    JSON.stringify(body),
