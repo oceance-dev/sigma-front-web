@@ -829,9 +829,11 @@ function DocumentRow({ doc, onDownload, onEdit, onDelete, disabled }: {
           {doc.isExpired && <span className="ml-1 text-destructive">· Expiré</span>}
         </p>
       </div>
-      <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium ${STATUS_CLASSES[doc.status]}`}>
-        {STATUS_LABELS[doc.status]}
-      </span>
+      {doc.status === 'rejected' && (
+        <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium ${STATUS_CLASSES.rejected}`}>
+          {STATUS_LABELS.rejected}
+        </span>
+      )}
       <div className="flex gap-1 shrink-0">
         <button onClick={handleDownload} disabled={disabled || downloading} title="Télécharger"
           className="flex h-7 w-7 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-40">

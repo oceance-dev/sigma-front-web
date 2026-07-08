@@ -1,19 +1,22 @@
 services:
-  sigma-web:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
-        NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN:-}
-        SENTRY_AUTH_TOKEN: ${SENTRY_AUTH_TOKEN:-}
-    image: sigma-web:latest
-    container_name: sigma-web
-    ports:
-      - "3000:3000"
-    restart: unless-stopped
-    environment:
-      NODE_ENV: production
-      # API_URL : injectée au runtime — pas besoin de rebuilder l'image si l'URL change
-      API_URL: ${API_URL}
-      NEXT_PUBLIC_API_URL=http://72.60.215.156/sigma-adonisjs/v1
+    sigma-web:
+      build:
+        context: .
+        dockerfile: Dockerfile
+        args:
+          NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+          NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN:-}
+          SENTRY_AUTH_TOKEN: ${SENTRY_AUTH_TOKEN:-}
+      image: sigma-web:latest
+      container_name: sigma-web
+      ports:
+        - "3000:3000"
+      restart: unless-stopped
+      environment:
+        NODE_ENV: production
+        API_URL: ${API_URL}
+      networks:
+        - ancre-adonisjs_default
+networks: 
+  ancre-adonisjs_default:
+    external: true
