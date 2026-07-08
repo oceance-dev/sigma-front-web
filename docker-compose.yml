@@ -5,18 +5,28 @@ services:
         dockerfile: Dockerfile
         args:
           NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+          NEXT_PUBLIC_API_HOST: ${NEXT_PUBLIC_API_HOST:-}
           NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN:-}
           SENTRY_AUTH_TOKEN: ${SENTRY_AUTH_TOKEN:-}
       image: sigma-web:latest
       container_name: sigma-web
-      ports:
-        - "3000:3000"
       restart: unless-stopped
+      expose:
+        - "3000"
       environment:
         NODE_ENV: production
         API_URL: ${API_URL}
+      labels:
+        - "traefik.enable=true"
+        - "traefik.docker.network=ancre-adonisjs_default"
+        - "traefik.http.routers.sigma-web.rule=Host(`sigma-saas.cloud`)"
+        - "traefik.http.routers.sigma-web.entrypoints=websecure"
+        - "traefik.http.routers.sigma-web.tls=true"
+        - "traefik.http.routers.sigma-web.tls.certresolver=letsencrypt"
+        - "traefik.http.services.sigma-web.loadbalancer.server.port=3000"
       networks:
         - ancre-adonisjs_default
-networks: 
+
+networks:
   ancre-adonisjs_default:
     external: true
