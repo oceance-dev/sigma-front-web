@@ -90,14 +90,16 @@ export default function MemberInscription() {
         const get = (k: string) => (fd.get(k) as string ?? '').trim()
 
         const body = {
-          codeAssociation: get('codeAssociation'),
-          invitationCode:  get('invitationCode'),
-          firstName:       get('firstName'),
-          lastName:        get('lastName'),
-          phone:           get('phone').replace(/\s/g, ''),
-          email:           get('email'),
-          password:        fd.get('password') as string,
-          passwordConfirmation: fd.get('confirmPassword') as string,
+          associationMember: {
+            codeAssociation:      get('codeAssociation'),
+            invitationCode:       get('invitationCode'),
+            firstName:            get('firstName'),
+            lastName:             get('lastName'),
+            phone:                get('phone').replace(/\s/g, ''),
+            email:                get('email'),
+            password:             fd.get('password') as string,
+            passwordConfirmation: fd.get('confirmPassword') as string,
+          },
         }
 
         const res = await fetch('/api/sigma/register/member-association', {
