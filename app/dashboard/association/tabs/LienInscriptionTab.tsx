@@ -73,8 +73,7 @@ function FeatureToggleRow({
 // ── CodeCard ───────────────────────────────────────────────
 
 interface AssocCodes {
-  codeAsso:       string | null
-  codeActivation: string | null
+  codeAsso: string | null
 }
 
 function CodeCard({
@@ -186,14 +185,11 @@ export default function LienInscriptionTab({
   const { association: authAssociation } = useAuth()
   const [origin,           setOrigin]           = useState('')
   const [codes,            setCodes]            = useState<AssocCodes>({
-    codeAsso:       association?.codeAsso       ?? null,
-    codeActivation: association?.codeActivation ?? null,
+    codeAsso: association?.codeAsso ?? null,
   })
   const [copiedLink,        setCopiedLink]        = useState(false)
   const [copiedAssoc,       setCopiedAssoc]       = useState(false)
-  const [copiedInvite,      setCopiedInvite]      = useState(false)
   const [regenAssoc,        setRegenAssoc]        = useState(false)
-  const [regenInvite,       setRegenInvite]       = useState(false)
   const [documentsEnabled,  setDocumentsEnabled]  = useState(association?.documentsRequisEnabled ?? false)
   const [campagnesEnabled,  setCampagnesEnabled]  = useState(association?.campaignsEnabled ?? false)
   const [togglingDocs,      setTogglingDocs]      = useState(false)
@@ -205,13 +201,10 @@ export default function LienInscriptionTab({
 
   // Sync quand l'association est chargée après le premier render
   useEffect(() => {
-    setCodes({
-      codeAsso:       association?.codeAsso       ?? null,
-      codeActivation: association?.codeActivation ?? null,
-    })
+    setCodes({ codeAsso: association?.codeAsso ?? null })
     setDocumentsEnabled(association?.documentsRequisEnabled ?? false)
     setCampagnesEnabled(association?.campaignsEnabled ?? false)
-  }, [association?.codeAsso, association?.codeActivation, association?.documentsRequisEnabled, association?.campaignsEnabled])
+  }, [association?.codeAsso, association?.documentsRequisEnabled, association?.campaignsEnabled])
 
   const assocId   = authAssociation?.id  ?? null
   const slug      = authAssociation?.slug ?? null
@@ -219,26 +212,17 @@ export default function LienInscriptionTab({
   const assocType = authAssociation?.type ?? null
   const url       = slug && origin ? `${origin}/sigin/${encodeURIComponent(slug)}` : null
 
-  async function regenerate(type: 'asso' | 'activation') {
+  async function regenerate() {
     if (!assocId) return
-    const setLoading = type === 'asso' ? setRegenAssoc : setRegenInvite
-    setLoading(true)
+    setRegenAssoc(true)
     try {
-      const route = type === 'asso'
-        ? `/admin/association/${assocId}/code`
-        : `/admin/association/${assocId}/code-activation`
-      const res  = await apiFetch(route, { method: 'POST' })
+      const res = await apiFetch(`/admin/association/${assocId}/code`, { method: 'POST' })
       if (res.ok) {
         const json = await res.json()
-        const code = json.data?.code ?? null
-        setCodes((prev) =>
-          type === 'asso'
-            ? { ...prev, codeAsso: code }
-            : { ...prev, codeActivation: code }
-        )
+        setCodes({ codeAsso: json.data?.code ?? null })
       }
     } finally {
-      setLoading(false)
+      setRegenAssoc(false)
     }
   }
 
@@ -277,19 +261,9 @@ export default function LienInscriptionTab({
 
   function copyAssocCode() {
     if (!codes.codeAsso) return
-    navigator.clipboard.writeText(codes.codeAsso).then(async () => {
+    navigator.clipboard.writeText(codes.codeAsso).then(() => {
       setCopiedAssoc(true)
       setTimeout(() => setCopiedAssoc(false), 2000)
-      await regenerate('asso')
-    })
-  }
-
-  function copyInviteCode() {
-    if (!codes.codeActivation) return
-    navigator.clipboard.writeText(codes.codeActivation).then(async () => {
-      setCopiedInvite(true)
-      setTimeout(() => setCopiedInvite(false), 2000)
-      await regenerate('activation')
     })
   }
 
@@ -406,30 +380,15 @@ export default function LienInscriptionTab({
           {/* ── Code de l'association ─────────────────── */}
           <CodeCard
             title="Code de l'association"
-            subtitle="Identifiant court de votre association, valable jusqu'à la prochaine copie."
-            badge="Renouvelable"
+            subtitle="Identifiant court de votre association à partager avec vos futurs membres."
+            badge="Permanent"
             badgeColor="bg-blue-100 text-blue-700"
             code={codes.codeAsso}
             copiedField={copiedAssoc}
             regenLoading={regenAssoc}
             onCopy={copyAssocCode}
-            onRegen={() => regenerate('asso')}
+            onRegen={regenerate}
             info="Ce code identifie votre association. Partagez-le avec un candidat pour qu'il rejoigne directement votre espace lors de son inscription."
-            warning="Ce code se renouvelle automatiquement après chaque copie pour garantir la sécurité."
-          />
-
-          {/* ── Code d'activation (à usage unique) ───── */}
-          <CodeCard
-            title="Code d'activation"
-            subtitle="Code à usage unique — change automatiquement après chaque utilisation ou copie."
-            badge="Usage unique"
-            badgeColor="bg-amber-100 text-amber-700"
-            code={codes.codeActivation}
-            copiedField={copiedInvite}
-            regenLoading={regenInvite}
-            onCopy={copyInviteCode}
-            onRegen={() => regenerate('activation')}
-            warning="Ce code ne peut être utilisé qu'une seule fois. Il se renouvelle automatiquement dès qu'un candidat l'utilise ou dès que vous le copiez."
           />
 
           {/* ── Comment ça marche ─────────────────────── */}

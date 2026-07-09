@@ -22,10 +22,13 @@ import { ActionBtn } from './_shared'
 // ── Constants ──────────────────────────────────────────────
 
 const MEMBER_STATUS_OPTIONS = [
-  { value: '',     label: 'Tous les statuts' },
-  { value: 'true', label: 'Actifs' },
-  { value: 'false', label: 'Inactifs' },
+  { value: '',      label: 'Tous les statuts' },
+  { value: 'true',  label: 'Actifs' },
+  { value: 'false', label: 'En attente / Inactifs' },
 ]
+
+// Rôle 6 = Candidat — ils ont leur propre onglet Candidatures
+const CANDIDATE_ROLE_KEY = '6'
 
 // ── MemberRow ──────────────────────────────────────────────
 
@@ -152,7 +155,9 @@ export default function MembresTab() {
     const res = await apiFetch(`/admin/members?${params}`)
     if (res.ok) {
       const json = await res.json()
-      setMembers(json.data.members ?? [])
+      // Exclure les candidats (rôle 6) — ils appartiennent à l'onglet Candidatures
+      const all: Member[] = json.data.members ?? []
+      setMembers(all.filter((m) => m.associationRoleKey !== CANDIDATE_ROLE_KEY))
       setMeta(json.data.meta ?? null)
     }
     setIsLoading(false)

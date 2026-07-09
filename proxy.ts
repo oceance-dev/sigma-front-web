@@ -11,6 +11,7 @@ const PUBLIC_PATHS = [
   '/api/auth',
   '/api/public',
   '/api/sigma/associations/inscription',
+  '/api/sigma/associations/by-code',
   '/api/sigma/register',
 ]
 
