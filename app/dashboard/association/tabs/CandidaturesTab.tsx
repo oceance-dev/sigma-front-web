@@ -265,11 +265,12 @@ function ScheduleModal({ candidature, onClose, onDone }: {
 
 // ── CandidatureDetailModal ─────────────────────────────────
 
-function CandidatureDetailModal({ candidature, onClose, onRefresh, onFeedback }: {
+function CandidatureDetailModal({ candidature, onClose, onRefresh, onFeedback, onSchedule }: {
   candidature: Candidature
   onClose: () => void
   onRefresh: () => void
   onFeedback: (msg: string, type: 'success' | 'error') => void
+  onSchedule: () => void
 }) {
   const [detail,     setDetail]     = useState<CandidatureDetail | null>(null)
   const [isLoading,  setIsLoading]  = useState(true)
@@ -450,10 +451,7 @@ function CandidatureDetailModal({ candidature, onClose, onRefresh, onFeedback }:
                 {statut === 'submitted' && (
                   <Button
                     variant="secondary"
-                    onClick={() => {
-                      onClose()
-                      // Le parent ouvre le ScheduleModal via le state
-                    }}
+                    onClick={() => { onClose(); onSchedule() }}
                     disabled={isPending}
                     className="flex items-center gap-1.5 text-purple-700 border-purple-200 hover:bg-purple-50"
                   >
@@ -717,6 +715,7 @@ export default function CandidaturesTab() {
           onClose={() => setDetail(null)}
           onRefresh={() => { setDetail(null); load(page, debouncedSearch) }}
           onFeedback={(msg, type) => setFeedback({ message: msg, type })}
+          onSchedule={() => { setScheduleTarget(detail); setDetail(null) }}
         />
       )}
       {rejectTarget && (

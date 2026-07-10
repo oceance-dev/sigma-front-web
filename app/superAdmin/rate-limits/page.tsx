@@ -48,7 +48,8 @@ export default function RateLimitsPage() {
     const res = await apiFetch('/super-admin/rate-limits')
     if (res.ok) {
       const json = await res.json()
-      setEntries(json.data?.entries ?? json.data ?? [])
+      const raw = json.data?.entries ?? json.data ?? []
+      setEntries(Array.isArray(raw) ? raw : [])
     } else {
       setError('Impossible de charger les rate limits.')
     }
@@ -98,8 +99,8 @@ export default function RateLimitsPage() {
             <Activity size={20} className="text-primary" />
           </div>
           <div>
-            <h1 className="heading-1">Rate Limits</h1>
-            <p className="text-muted mt-0.5">Visualisez et réinitialisez les limitations de requêtes</p>
+            <h1 className="text-xl font-bold text-foreground">Rate Limits</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">Visualisez et réinitialisez les limitations de requêtes</p>
           </div>
         </div>
         <div className="flex gap-2 shrink-0">
@@ -174,8 +175,8 @@ export default function RateLimitsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {entries.map((entry) => (
-                <tr key={entry.keyB64} className="bg-card hover:bg-muted/30 transition-colors">
+              {entries.map((entry, idx) => (
+                <tr key={entry.keyB64 ?? idx} className="bg-card hover:bg-muted/30 transition-colors">
                   <td className="px-4 py-3">
                     <p className="font-mono text-xs text-foreground break-all">{entry.key}</p>
                   </td>
