@@ -98,7 +98,6 @@ export default function CandidatDocumentsPage() {
 
       if (reqRes.ok) {
         const json = await reqRes.json()
-        console.log('[doc-requirements]', json)
         setRequirements(json.data?.requirements ?? [])
         setCompletion(json.data?.completion ?? null)
       }

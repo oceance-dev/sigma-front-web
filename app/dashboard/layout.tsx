@@ -51,6 +51,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   if (!isAuthenticated || !!user?.isSuperAdmin) return null;
 
+  // Ne pas afficher le layout dashboard pour les candidats — ils sont redirigés
+  const roleKey       = user?.associationRoleKey ?? ''
+  const isGendarmerie = association?.type === 'gendarmerie'
+  if (roleKey === '4' || (isGendarmerie && roleKey === '6')) return null;
+
   return (
     <>
       <Header />
