@@ -30,7 +30,7 @@ export default async function HomePage() {
               Se connecter
             </Link>
             <Link href="/sigin" className={cn(buttonVariants({ size: 'sm' }))}>
-              Accès bêta gratuit
+              Essai gratuit 14 jours
             </Link>
           </div>
         </div>
@@ -40,7 +40,7 @@ export default async function HomePage() {
       <section className="px-4 pt-20 pb-16 sm:pt-28 sm:pb-24 text-center">
         <div className="mx-auto max-w-3xl">
           <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary mb-6">
-            Bêta ouverte — accès gratuit pendant 1 mois
+            Essai gratuit de 14 jours
           </div>
           <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
             La gestion de votre association,{' '}
@@ -52,7 +52,7 @@ export default async function HomePage() {
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Link href="/sigin" className={cn(buttonVariants({ size: 'lg' }))}>
-              Demander l'accès bêta
+              Commencer l'essai gratuit
               <ArrowRight size={16} className="ml-2" />
             </Link>
             <Link href="/login" className={cn(buttonVariants({ variant: 'outline', size: 'lg' }))}>
@@ -60,7 +60,7 @@ export default async function HomePage() {
             </Link>
           </div>
           <p className="mt-4 text-xs text-muted-foreground">
-            Accès bêta gratuit · Aucune CB requise · Associations jeunesse uniquement
+            Essai gratuit de 14 jours · Aucune CB requise · Associations jeunesse uniquement
           </p>
 
           {/* App mockup */}
@@ -203,7 +203,7 @@ export default async function HomePage() {
           <h2 className="text-2xl font-bold text-center mb-2">Tarifs</h2>
           <p className="text-center text-sm text-muted-foreground mb-3">Simple et transparent</p>
           <p className="text-center text-sm text-muted-foreground mb-12 max-w-lg mx-auto">
-            Pendant la bêta, toutes les associations partenaires bénéficient d'un accès gratuit complet pendant 1 mois.
+            Toutes les associations bénéficient d'un essai gratuit complet de 14 jours, sans carte bancaire.
           </p>
 
           <div className="grid gap-5 lg:grid-cols-2 max-w-2xl mx-auto">
@@ -232,7 +232,7 @@ export default async function HomePage() {
                 ))}
               </ul>
               <Link href="/sigin" className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'mt-6 w-full justify-center')}>
-                Rejoindre la liste d'attente
+                S'inscrire
               </Link>
             </div>
 
@@ -261,7 +261,7 @@ export default async function HomePage() {
                 ))}
               </ul>
               <Link href="/sigin" className={cn(buttonVariants({ size: 'sm' }), 'mt-6 w-full justify-center')}>
-                Rejoindre la liste d'attente
+                S'inscrire
               </Link>
             </div>
 
@@ -312,7 +312,7 @@ export default async function HomePage() {
             Accès complet, sans engagement, avec un accompagnement personnalisé.
           </p>
           <Link href="/sigin" className={cn(buttonVariants({ size: 'lg' }))}>
-            Accès bêta gratuit
+            Commencer l'essai gratuit
             <ArrowRight size={16} className="ml-2" />
           </Link>
           <p className="mt-3 text-xs text-muted-foreground">Aucune carte bancaire requise · Réponse sous 48h</p>
@@ -334,7 +334,7 @@ export default async function HomePage() {
               <div className="flex flex-col gap-2">
                 <a href="#fonctionnalites" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Fonctionnalités</a>
                 <a href="#tarifs" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Tarifs</a>
-                <Link href="/sigin" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Accès bêta</Link>
+                <Link href="/sigin" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Inscription</Link>
               </div>
             </div>
             <div>
