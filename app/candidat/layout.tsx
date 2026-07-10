@@ -37,7 +37,11 @@ export default function CandidatLayout({ children }: { children: React.ReactNode
   useEffect(() => {
     if (isLoading) return
     if (!isAuthenticated) { router.replace('/login'); return }
-    if (user?.associationRoleKey !== '4') router.replace('/dashboard')
+
+    const roleKey       = user?.associationRoleKey ?? ''
+    const isGendarmerie = association?.type === 'gendarmerie'
+    const isCandidatRole = roleKey === '4' || (isGendarmerie && roleKey === '6')
+    if (!isCandidatRole) router.replace('/dashboard')
   }, [isAuthenticated, isLoading, user, association, router])
 
   if (isLoading) {
