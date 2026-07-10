@@ -47,9 +47,10 @@ function fileMeta(mimeType: string, ext: string): FileMeta {
   return { label: ext ? ext.toUpperCase() : 'Fichier', color: 'text-muted-foreground', bg: 'bg-muted/40', icon: <FileText size={40} strokeWidth={1.2} /> }
 }
 
-async function fetchBlobUrl(id: string, mimeType: string): Promise<string | null> {
+async function fetchBlobUrl(id: string, mimeType: string, viewUrl?: string): Promise<string | null> {
   const token = tokenStore.get()
-  const res = await fetch(`/api/documents/view/${id}`, {
+  const url   = viewUrl ?? `/api/documents/view/${id}`
+  const res   = await fetch(url, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   })
   if (!res.ok) return null
@@ -63,10 +64,12 @@ export default function DocumentViewerModal({
   doc,
   onClose,
   onDownload,
+  viewUrl,
 }: {
   doc: Document
   onClose: () => void
   onDownload: () => void
+  viewUrl?: string
 }) {
   const [url,     setUrl]     = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -78,7 +81,7 @@ export default function DocumentViewerModal({
 
   useEffect(() => {
     let blobUrl: string | null = null
-    fetchBlobUrl(doc.id, doc.mimeType)
+    fetchBlobUrl(doc.id, doc.mimeType, viewUrl)
       .then((u) => { blobUrl = u; u ? setUrl(u) : setError(true) })
       .catch(() => setError(true))
       .finally(() => setLoading(false))

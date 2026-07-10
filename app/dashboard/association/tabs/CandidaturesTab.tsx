@@ -7,6 +7,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ClipboardList,
+  Eye,
   FileText,
   Loader2,
   Mail,
@@ -17,9 +18,11 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { apiFetch } from '@/src/lib/api-client'
+import { tokenStore } from '@/src/lib/token-store'
 import type { Document } from '@/src/types/document'
 import { useDebounce } from '@/src/hooks/useDebounce'
 import { ActionBtn } from './_shared'
+import DocumentViewerModal from '@/components/DocumentViewerModal'
 
 // ── Types ──────────────────────────────────────────────────
 
@@ -268,10 +271,21 @@ function CandidatureDetailModal({ candidature, onClose, onRefresh, onFeedback }:
   onRefresh: () => void
   onFeedback: (msg: string, type: 'success' | 'error') => void
 }) {
-  const [detail, setDetail] = useState<CandidatureDetail | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [rejectDoc, setRejectDoc] = useState<Document | null>(null)
-  const [isPending, startTransition] = useTransition()
+  const [detail,     setDetail]     = useState<CandidatureDetail | null>(null)
+  const [isLoading,  setIsLoading]  = useState(true)
+  const [rejectDoc,  setRejectDoc]  = useState<Document | null>(null)
+  const [viewingDoc, setViewingDoc] = useState<Document | null>(null)
+  const [isPending,  startTransition] = useTransition()
+
+  async function downloadDoc(doc: Document) {
+    const token = tokenStore.get()
+    const res   = await fetch(`/api/sigma/candidatures/documents/download-url/${doc.id}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
+    if (!res.ok) return
+    const json = await res.json().catch(() => null)
+    if (json?.data?.url) window.open(json.data.url, '_blank')
+  }
 
   useEffect(() => {
     apiFetch(`/admin/candidatures/${candidature.id}`)
@@ -378,16 +392,21 @@ function CandidatureDetailModal({ candidature, onClose, onRefresh, onFeedback }:
                       }`}>
                         {doc.status === 'approved' ? 'Validé' : doc.status === 'rejected' ? 'Refusé' : 'En attente'}
                       </span>
-                      {doc.status === 'pending' && (
-                        <div className="flex gap-1 shrink-0">
-                          <ActionBtn onClick={() => approveDoc(doc.id)} disabled={isPending} title="Valider" className="hover:bg-primary/10 hover:text-primary">
-                            <Check size={13} />
-                          </ActionBtn>
-                          <ActionBtn onClick={() => setRejectDoc(doc)} disabled={isPending} title="Refuser" className="hover:bg-destructive/10 hover:text-destructive">
-                            <X size={13} />
-                          </ActionBtn>
-                        </div>
-                      )}
+                      <div className="flex gap-1 shrink-0">
+                        <ActionBtn onClick={() => setViewingDoc(doc)} disabled={isPending} title="Visualiser" className="hover:bg-accent hover:text-foreground">
+                          <Eye size={13} />
+                        </ActionBtn>
+                        {doc.status === 'pending' && (
+                          <>
+                            <ActionBtn onClick={() => approveDoc(doc.id)} disabled={isPending} title="Valider" className="hover:bg-primary/10 hover:text-primary">
+                              <Check size={13} />
+                            </ActionBtn>
+                            <ActionBtn onClick={() => setRejectDoc(doc)} disabled={isPending} title="Refuser" className="hover:bg-destructive/10 hover:text-destructive">
+                              <X size={13} />
+                            </ActionBtn>
+                          </>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -499,6 +518,15 @@ function CandidatureDetailModal({ candidature, onClose, onRefresh, onFeedback }:
               documents: prev.documents.map((d) => d.id === rejectDoc.id ? { ...d, status: 'rejected' as const } : d)
             } : prev)
           }}
+        />
+      )}
+
+      {/* Visualiseur de document */}
+      {viewingDoc && (
+        <DocumentViewerModal
+          doc={viewingDoc}
+          onClose={() => setViewingDoc(null)}
+          onDownload={() => downloadDoc(viewingDoc)}
         />
       )}
     </div>

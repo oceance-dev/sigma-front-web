@@ -37,7 +37,7 @@ export default function CandidatLayout({ children }: { children: React.ReactNode
   useEffect(() => {
     if (isLoading) return
     if (!isAuthenticated) { router.replace('/login'); return }
-    if (user?.associationRoleKey !== '6') router.replace('/dashboard')
+    if (user?.associationRoleKey !== '4') router.replace('/dashboard')
   }, [isAuthenticated, isLoading, user, association, router])
 
   if (isLoading) {

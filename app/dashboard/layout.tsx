@@ -22,7 +22,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const roleKey       = user?.associationRoleKey ?? '';
     const isGendarmerie = association?.type === 'gendarmerie';
 
-    if (roleKey === '6') {
+    if (roleKey === '4') {
       router.replace('/candidat/documents');
       return;
     }

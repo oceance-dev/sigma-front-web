@@ -198,8 +198,8 @@ function CampaignDetailView({ campaign, onBack, onEdit, onAction, onStatusAction
     if (selected.size === 0) return
     setReqError(null)
     startValidate(async () => {
-      const res  = await apiFetch(`/admin/campaigns/${campaign.id}/init-requirements`, {
-        method: 'POST',
+      const res  = await apiFetch(`/admin/campaigns/${campaign.id}/requirements`, {
+        method: 'PUT',
         body: JSON.stringify({ requirementIds: Array.from(selected) }),
       })
       const json = await res.json()
