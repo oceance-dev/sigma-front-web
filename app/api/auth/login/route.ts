@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { COOKIE_REFRESH, refreshCookieOptions } from '@/src/lib/auth-cookies'
-import { API_URL } from '@/src/lib/api-config'
+import { API_URL, clientIpHeaders } from '@/src/lib/api-config'
 
 export async function POST(req: NextRequest) {
   const body = await req.json()
@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
   try {
     res = await fetch(`${API_URL}/auth/login`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...clientIpHeaders(req) },
       body: JSON.stringify(body),
     })
   } catch {

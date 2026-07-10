@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { API_URL } from '@/src/lib/api-config'
+import { API_URL, clientIpHeaders } from '@/src/lib/api-config'
 import { z } from 'zod'
 
 const Schema = z.object({ email: z.string().email() })
@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
   try {
     res = await fetch(`${API_URL}/auth/forgot-password`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...clientIpHeaders(req) },
       body: JSON.stringify(parsed.data),
     })
   } catch {
