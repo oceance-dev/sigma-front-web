@@ -41,7 +41,7 @@ const nextConfig: NextConfig = {
     // utilisé uniquement pour le CSP côté browser.
     // Si absent, le browser n'a besoin que de 'self' car tout passe par /api/sigma/*
     const apiHost = process.env.NEXT_PUBLIC_API_HOST ?? ''
-    const connectSrc = ['self', apiHost, 'https://geo.api.gouv.fr']
+    const connectSrc = ['self', apiHost, 'https://geo.api.gouv.fr', 'https://*.ingest.de.sentry.io', 'https://*.ingest.sentry.io', 'https://*.s3.fr-par.scw.cloud']
       .filter(Boolean)
       .map(v => v === 'self' ? "'self'" : v)
       .join(' ')
@@ -61,10 +61,12 @@ const nextConfig: NextConfig = {
               `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''}`,
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob:",
+              "object-src 'none'",
               `connect-src ${connectSrc}`,
               "font-src 'self'",
               "worker-src 'self' blob:",
-              "frame-ancestors 'none'",
+              "frame-src 'self' blob:",
+              "frame-ancestors 'self'",
             ].join('; '),
           },
         ],
@@ -96,12 +98,6 @@ export default withSentryConfig(nextConfig, {
 
   // Upload a larger set of source maps for prettier stack traces (increases build time)
   widenClientFileUpload: true,
-
-  // Route browser requests to Sentry through a Next.js rewrite to circumvent ad-blockers.
-  // This can increase your server load as well as your hosting bill.
-  // Note: Check that the configured route will not match with your Next.js middleware, otherwise reporting of client-
-  // side errors will fail.
-  tunnelRoute: "/monitoring",
 
   webpack: {
     // Enables automatic instrumentation of Vercel Cron Monitors. (Does not yet work with App Router route handlers.)

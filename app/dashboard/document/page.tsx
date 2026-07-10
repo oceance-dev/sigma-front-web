@@ -42,6 +42,7 @@ import type { FolderBasic, FolderPermissions, FolderWithPermissions } from '@/sr
 import type { Document, DocumentType } from '@/src/types/document'
 import { DOCUMENT_CATEGORIES } from '@/src/types/document'
 import type { Member } from '@/src/types/member'
+import DocumentViewerModal from '@/components/DocumentViewerModal'
 
 // ── Constantes ─────────────────────────────────────────────
 
@@ -436,6 +437,7 @@ export default function DocumentPage() {
   const [deletingFolder, setDeletingFolder] = useState<FolderWithPermissions | null>(null)
   const [showUpload, setShowUpload] = useState(false)
   const [editingDoc, setEditingDoc] = useState<Document | null>(null)
+  const [viewingDoc, setViewingDoc] = useState<Document | null>(null)
   const [isPending, startTransition] = useTransition()
 
   // ── Chargement ───────────────────────────────────────────
@@ -615,6 +617,7 @@ export default function DocumentPage() {
               <div className="flex flex-col divide-y divide-border rounded-xl border border-border overflow-hidden">
                 {documents.map((doc) => (
                   <DocumentRow key={doc.id} doc={doc}
+                    onView={() => setViewingDoc(doc)}
                     onDownload={() => downloadDocument(doc.id)}
                     onEdit={() => setEditingDoc(doc)}
                     onDelete={() => deleteDocument(doc.id)}
@@ -679,6 +682,14 @@ export default function DocumentPage() {
         <EditDocumentModal doc={editingDoc}
           onClose={() => setEditingDoc(null)}
           onSaved={() => { setEditingDoc(null); reload() }}
+        />
+      )}
+
+      {viewingDoc && (
+        <DocumentViewerModal
+          doc={viewingDoc}
+          onClose={() => setViewingDoc(null)}
+          onDownload={() => downloadDocument(viewingDoc.id)}
         />
       )}
     </div>
@@ -808,8 +819,8 @@ function FolderMenu({ onOpen, onEdit, onDelete }: {
 
 // ── DocumentRow ────────────────────────────────────────────
 
-function DocumentRow({ doc, onDownload, onEdit, onDelete, disabled }: {
-  doc: Document; onDownload: () => void; onEdit: () => void; onDelete: () => void; disabled: boolean
+function DocumentRow({ doc, onView, onDownload, onEdit, onDelete, disabled }: {
+  doc: Document; onView: () => void; onDownload: () => void; onEdit: () => void; onDelete: () => void; disabled: boolean
 }) {
   const [downloading, setDownloading] = useState(false)
 
@@ -822,13 +833,13 @@ function DocumentRow({ doc, onDownload, onEdit, onDelete, disabled }: {
   return (
     <div className="flex items-center gap-3 bg-card px-4 py-3 hover:bg-muted/40 transition-colors">
       <FileText size={16} className="shrink-0 text-muted-foreground" />
-      <div className="flex-1 min-w-0">
-        <p className="text-sm text-foreground truncate">{doc.originalName}</p>
+      <button onClick={onView} className="flex-1 min-w-0 text-left hover:text-primary transition-colors">
+        <p className="text-sm text-foreground truncate hover:text-primary">{doc.originalName}</p>
         <p className="text-xs text-muted-foreground">
           {doc.fileSizeFormatted} · {doc.categoryLabel}
           {doc.isExpired && <span className="ml-1 text-destructive">· Expiré</span>}
         </p>
-      </div>
+      </button>
       {doc.status === 'rejected' && (
         <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium ${STATUS_CLASSES.rejected}`}>
           {STATUS_LABELS.rejected}
