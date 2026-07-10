@@ -216,12 +216,13 @@ function ScheduleModal({ candidature, onClose, onDone }: {
           {/* Date */}
           <div className="grid gap-1.5">
             <Label htmlFor="sched-date">Date et heure de l'entretien *</Label>
-            <Input
+            <input
               id="sched-date"
               type="datetime-local"
               value={date}
               onChange={(e) => setDate(e.target.value)}
               disabled={isPending}
+              className="h-9 w-full rounded-md border border-input bg-transparent px-2.5 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </div>
 

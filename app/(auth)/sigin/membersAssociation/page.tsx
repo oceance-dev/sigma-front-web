@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { PasswordInput } from '@/components/PasswordInput'
 
 const FR_PHONE = /^0[1-9]\d{8}$/
 
@@ -347,7 +348,7 @@ export default function MemberInscription() {
                 disabled={isPending} autoComplete="email" aria-invalid={!!errors.email} />
             </Field>
             <Field id="password" label="Mot de passe" required error={errors.password}>
-              <Input id="password" name="password" type="password" disabled={isPending}
+              <PasswordInput id="password" name="password" disabled={isPending}
                 autoComplete="new-password" value={password}
                 onChange={(e) => setPassword(e.target.value)} aria-invalid={!!errors.password} />
               {password.length > 0 && (
@@ -361,7 +362,7 @@ export default function MemberInscription() {
               )}
             </Field>
             <Field id="confirmPassword" label="Confirmer le mot de passe" required error={errors.confirmPassword}>
-              <Input id="confirmPassword" name="confirmPassword" type="password"
+              <PasswordInput id="confirmPassword" name="confirmPassword"
                 disabled={isPending} autoComplete="new-password" aria-invalid={!!errors.confirmPassword} />
             </Field>
           </CardContent>

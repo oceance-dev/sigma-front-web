@@ -4,6 +4,7 @@ import { useState, useTransition, type FormEvent } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, CheckCircle2, Mail, MapPin } from 'lucide-react';
+import { PasswordInput } from '@/components/PasswordInput';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -560,10 +561,9 @@ export default function AssociationInscription() {
               </div>
 
               <Field id="password" label="Mot de passe" required error={errors.password}>
-                <Input
+                <PasswordInput
                   id="password"
                   name="password"
-                  type="password"
                   required
                   disabled={disabled}
                   autoComplete="new-password"
@@ -588,10 +588,9 @@ export default function AssociationInscription() {
                 required
                 error={errors.passwordConfirmation}
               >
-                <Input
+                <PasswordInput
                   id="passwordConfirmation"
                   name="passwordConfirmation"
-                  type="password"
                   required
                   disabled={disabled}
                   autoComplete="new-password"

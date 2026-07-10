@@ -8,6 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from '@/components/PasswordInput';
 import { Label } from "@/components/ui/label";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -47,11 +48,11 @@ export default function UserInscription() {
             </div>
             <div className="grid gap-1.5">
               <Label htmlFor="password">Mot de passe</Label>
-              <Input id="password" type="password" required />
+              <PasswordInput id="password" name="password" required />
             </div>
             <div className="grid gap-1.5">
               <Label htmlFor="confirmPassword">Confirmer le mot de passe</Label>
-              <Input id="confirmPassword" type="password" required />
+              <PasswordInput id="confirmPassword" name="confirmPassword" required />
             </div>
           </div>
         </CardContent>
