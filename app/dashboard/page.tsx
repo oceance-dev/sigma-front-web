@@ -11,6 +11,7 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  ClipboardList,
   CreditCard,
   FileText,
   FolderOpen,
@@ -25,7 +26,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { Member } from '@/src/types/member'
-import OnboardingChecklist from '@/components/OnboardingChecklist'
+import OnboardingWizard from '@/components/OnboardingWizard'
 import EmailVerificationBanner from '@/components/EmailVerificationBanner'
 
 // ── Helpers ────────────────────────────────────────────────
@@ -198,12 +199,14 @@ export default function DashboardPage() {
 interface DashboardStats {
   docsTotal: number; foldersTotal: number
   membersTotal: number | null; cadetsTotal: number | null; pendingMembersCount: number | null
+  candidaturesTotal: number | null
 }
 
 function RegularDashboard() {
   const { user, association } = useAuth()
-  const isAdmin = !!user?.isAdmin
-  const isTrial = association?.isTrial ?? false
+  const isAdmin       = !!user?.isAdmin
+  const isGendarmerie = association?.type === 'gendarmerie'
+  const isTrial       = association?.isTrial ?? false
 
   const [stats,          setStats]          = useState<DashboardStats | null>(null)
   const [pendingMembers, setPendingMembers] = useState<Member[]>([])
@@ -222,13 +225,17 @@ function RegularDashboard() {
         calls.push(apiFetch('/admin/members?limit=1').then(r => r.json()))
         calls.push(apiFetch('/admin/members?limit=5&isActive=false').then(r => r.json()))
         calls.push(apiFetch('/admin/cadets').then(r => r.json()))
+        if (isGendarmerie) {
+          calls.push(apiFetch('/admin/candidatures?limit=1&all=true').then(r => r.json()))
+        }
       }
 
-      const MetaSchema    = z.object({ data: z.object({ meta: z.object({ total: z.number() }) }) })
-      const FoldersSchema = z.object({ data: z.object({ folders: z.array(z.unknown()) }) })
-      const ReqSchema     = z.object({ data: z.array(z.unknown()) })
-      const MembersSchema = z.object({ data: z.object({ meta: z.object({ total: z.number() }), members: z.array(z.unknown()).optional() }) })
-      const CadetsSchema  = z.object({ data: z.array(z.unknown()) })
+      const MetaSchema          = z.object({ data: z.object({ meta: z.object({ total: z.number() }) }) })
+      const FoldersSchema       = z.object({ data: z.object({ folders: z.array(z.unknown()) }) })
+      const ReqSchema           = z.object({ data: z.array(z.unknown()) })
+      const MembersSchema       = z.object({ data: z.object({ meta: z.object({ total: z.number() }), members: z.array(z.unknown()).optional() }) })
+      const CadetsSchema        = z.object({ data: z.array(z.unknown()) })
+      const CandidaturesSchema  = z.object({ data: z.object({ meta: z.object({ total: z.number() }) }) })
 
       const results = await Promise.allSettled(calls)
       const get = (i: number) => results[i].status === 'fulfilled' ? (results[i] as PromiseFulfilledResult<unknown>).value : null
@@ -246,23 +253,25 @@ function RegularDashboard() {
       const s: DashboardStats = {
         docsTotal:    docsParsed.success    ? docsParsed.data.data.meta.total          : 0,
         foldersTotal: foldersParsed.success ? foldersParsed.data.data.folders.length   : 0,
-        membersTotal: null, cadetsTotal: null, pendingMembersCount: null,
+        membersTotal: null, cadetsTotal: null, pendingMembersCount: null, candidaturesTotal: null,
       }
 
       if (isAdmin) {
-        const membersParsed = MembersSchema.safeParse(get(3))
-        const pendingParsed = MembersSchema.safeParse(get(4))
-        const cadetsParsed  = CadetsSchema.safeParse(get(5))
-        s.membersTotal        = membersParsed.success ? membersParsed.data.data.meta.total : null
-        s.cadetsTotal         = cadetsParsed.success  ? cadetsParsed.data.data.length      : null
-        s.pendingMembersCount = pendingParsed.success  ? pendingParsed.data.data.meta.total : null
+        const membersParsed       = MembersSchema.safeParse(get(3))
+        const pendingParsed       = MembersSchema.safeParse(get(4))
+        const cadetsParsed        = CadetsSchema.safeParse(get(5))
+        const candidaturesParsed  = isGendarmerie ? CandidaturesSchema.safeParse(get(6)) : null
+        s.membersTotal        = membersParsed.success      ? membersParsed.data.data.meta.total      : null
+        s.cadetsTotal         = cadetsParsed.success       ? cadetsParsed.data.data.length           : null
+        s.pendingMembersCount = pendingParsed.success      ? pendingParsed.data.data.meta.total      : null
+        s.candidaturesTotal   = candidaturesParsed?.success ? candidaturesParsed.data.data.meta.total : null
         setPendingMembers(pendingParsed.success ? (pendingParsed.data.data.members as Member[]) ?? [] : [])
       }
 
       setStats(s); setIsLoading(false)
     }
     load()
-  }, [isAdmin])
+  }, [isAdmin, isGendarmerie])
 
   function approveMember(id: string) {
     startTransition(async () => {
@@ -289,7 +298,7 @@ function RegularDashboard() {
       <EmailVerificationBanner />
 
       {/* Onboarding */}
-      {isAdmin && <OnboardingChecklist />}
+      <OnboardingWizard />
 
       {/* Alerte essai */}
       {isTrial && (
@@ -310,8 +319,11 @@ function RegularDashboard() {
             <StatCard icon={<Shield size={20} className="text-purple-600" />} color="bg-purple-50" label="Cadets"  value={stats?.cadetsTotal ?? null}  isLoading={isLoading} href="/dashboard/association" />
           </>
         )}
-        <StatCard icon={<FileText size={20} className="text-emerald-600" />} color="bg-emerald-50" label="Documents" value={stats?.docsTotal ?? null}    isLoading={isLoading} href="/dashboard/document" />
-        <StatCard icon={<FolderOpen size={20} className="text-amber-600" />} color="bg-amber-50"   label="Dossiers"  value={stats?.foldersTotal ?? null} isLoading={isLoading} href="/dashboard/document" />
+        {isAdmin && isGendarmerie
+          ? <StatCard icon={<ClipboardList size={20} className="text-emerald-600" />} color="bg-emerald-50" label="Candidatures" value={stats?.candidaturesTotal ?? null} isLoading={isLoading} href="/dashboard/association" />
+          : <StatCard icon={<FileText size={20} className="text-emerald-600" />}      color="bg-emerald-50" label="Documents"    value={stats?.docsTotal ?? null}          isLoading={isLoading} href="/dashboard/document" />
+        }
+        <StatCard icon={<FolderOpen size={20} className="text-amber-600" />} color="bg-amber-50" label="Dossiers" value={stats?.foldersTotal ?? null} isLoading={isLoading} href="/dashboard/document" />
       </div>
 
       {/* Contenu */}

@@ -5,6 +5,7 @@ import { Building2 } from 'lucide-react'
 import { apiFetch } from '@/src/lib/api-client'
 import { useAuth } from '@/src/context/auth-context'
 import type { Association } from '@/src/types/association'
+import { useSearchParams } from 'next/navigation'
 
 // ── Lazy tab imports ───────────────────────────────────────
 
@@ -48,8 +49,12 @@ function TabFallback() {
 
 export default function AssociationPage() {
   const { user, association: authAssociation } = useAuth()
+  const searchParams  = useSearchParams()
   const isGendarmerie = authAssociation?.type === 'gendarmerie'
-  const [tab, setTab] = useState<TabId>('association')
+  const [tab, setTab] = useState<TabId>(() => {
+    const p = searchParams.get('tab') as TabId | null
+    return p ?? 'association'
+  })
   const [association, setAssociation] = useState<Association | null>(null)
   const [showEdit, setShowEdit] = useState(false)
   const [togglingOnline, setTogglingOnline] = useState(false)

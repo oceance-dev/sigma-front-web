@@ -96,7 +96,7 @@ export default function MemberInscription() {
     if (!get('firstname') || get('firstname').length < 2) e.firstname    = 'Prénom requis (2 caractères minimum)'
     if (!get('lastname')  || get('lastname').length  < 2) e.lastname     = 'Nom requis (2 caractères minimum)'
     if (!get('dateOfBirth'))                               e.dateOfBirth  = 'Date de naissance requise'
-    if (!get('sexe'))                                      e.sexe         = 'Genre requis'
+    if (!get('sexe'))                                      e.sexe         = 'Sexe requis'
     if (!/^\d{5}$/.test(get('city_code')))                e.city_code    = 'Code postal invalide (5 chiffres)'
 
     const phone = get('phone').replace(/\s/g, '')
@@ -317,7 +317,7 @@ export default function MemberInscription() {
                 <Input id="dateOfBirth" name="dateOfBirth" type="date" disabled={isPending}
                   autoComplete="bday" aria-invalid={!!errors.dateOfBirth} />
               </Field>
-              <Field id="sexe" label="Genre" required error={errors.sexe}>
+              <Field id="sexe" label="Sexe" required error={errors.sexe}>
                 <select id="sexe" name="sexe" disabled={isPending}
                   className="h-9 w-full rounded-md border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50">
                   <option value="">Sélectionner…</option>

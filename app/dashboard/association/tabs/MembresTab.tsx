@@ -7,12 +7,15 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  Eye,
   Loader2,
   Search,
   Users,
   X,
 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Button } from '@/components/ui/button'
 import { apiFetch } from '@/src/lib/api-client'
 import type { Member, MemberMeta } from '@/src/types/member'
 import { useDebounce } from '@/src/hooks/useDebounce'
@@ -36,11 +39,13 @@ function MemberRow({
   member,
   roleName,
   onAction,
+  onView,
   disabled,
 }: {
   member: Member
   roleName?: string
   onAction: (type: 'approve' | 'reject' | 'suspend' | 'delete') => void
+  onView: () => void
   disabled: boolean
 }) {
   const initials = `${member.firstName[0]}${member.lastName[0]}`.toUpperCase()
@@ -79,6 +84,14 @@ function MemberRow({
 
       {/* Actions */}
       <div className="flex gap-1 shrink-0">
+        <ActionBtn
+          onClick={onView}
+          disabled={disabled}
+          title="Voir / modifier le rôle"
+          className="hover:bg-accent hover:text-foreground"
+        >
+          <Eye size={14} />
+        </ActionBtn>
         {!member.isActive && (
           <ActionBtn
             onClick={() => onAction('approve')}
@@ -122,6 +135,108 @@ function MemberRow({
   )
 }
 
+// ── MemberDetailModal ──────────────────────────────────────
+
+function MemberDetailModal({ member, roleMap, onClose, onSaved }: {
+  member: Member
+  roleMap: Record<string, string>
+  onClose: () => void
+  onSaved: (msg: string) => void
+}) {
+  const [selectedRole, setSelectedRole] = useState(member.associationRoleKey ?? '')
+  const [error,        setError]        = useState<string | null>(null)
+  const [isPending,    startTransition] = useTransition()
+
+  const hasChanged = selectedRole !== (member.associationRoleKey ?? '')
+
+  function save() {
+    if (!hasChanged) return
+    setError(null)
+    startTransition(async () => {
+      const res  = await apiFetch(`/admin/members/${member.id}/role`, {
+        method: 'PATCH',
+        body: JSON.stringify({ roleKey: selectedRole }),
+      })
+      const json = await res.json()
+      if (res.ok) onSaved(json.message ?? 'Rôle mis à jour.')
+      else setError(json.message ?? 'Erreur lors de la mise à jour.')
+    })
+  }
+
+  const initials = `${member.firstName[0]}${member.lastName[0]}`.toUpperCase()
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
+    >
+      <div className="w-full max-w-sm rounded-xl border border-border bg-card shadow-xl">
+
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-border px-4 py-3">
+          <h2 className="text-sm font-medium text-foreground">Détail du membre</h2>
+          <button onClick={onClose} className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-accent">
+            <X size={14} />
+          </button>
+        </div>
+
+        <div className="flex flex-col gap-4 p-4">
+
+          {/* Identité */}
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 shrink-0 rounded-full bg-primary/10 flex items-center justify-center text-sm font-semibold text-primary">
+              {initials}
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-foreground">{member.fullName}</p>
+              <p className="text-xs text-muted-foreground truncate">{member.email}</p>
+              {member.phone && <p className="text-xs text-muted-foreground">{member.phone}</p>}
+            </div>
+          </div>
+
+          {/* Statut */}
+          <div className="flex items-center justify-between rounded-lg bg-muted/30 px-3 py-2">
+            <span className="text-xs text-muted-foreground">Statut</span>
+            <span className={`rounded px-2 py-0.5 text-xs font-medium ${
+              member.isActive ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'
+            }`}>
+              {member.isActive ? 'Actif' : 'Inactif'}
+            </span>
+          </div>
+
+          {/* Rôle */}
+          <div className="grid gap-1.5">
+            <Label htmlFor="member-role">Rôle</Label>
+            <select
+              id="member-role"
+              value={selectedRole}
+              onChange={(e) => setSelectedRole(e.target.value)}
+              disabled={isPending}
+              className="h-9 w-full rounded-md border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50"
+            >
+              <option value="">— Aucun rôle —</option>
+              {Object.entries(roleMap).map(([key, name]) => (
+                <option key={key} value={key}>{name}</option>
+              ))}
+            </select>
+          </div>
+
+          {error && (
+            <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>
+          )}
+        </div>
+
+        <div className="flex justify-end gap-2 border-t border-border p-4">
+          <Button variant="secondary" onClick={onClose} disabled={isPending}>Fermer</Button>
+          <Button onClick={save} disabled={isPending || !hasChanged}>
+            {isPending ? 'Enregistrement…' : 'Enregistrer'}
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── MembresTab ─────────────────────────────────────────────
 
 export default function MembresTab() {
@@ -135,6 +250,7 @@ export default function MembresTab() {
   const [feedback, setFeedback] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
   const [isPending, startTransition] = useTransition()
   const [confirmPending, setConfirmPending] = useState<null | { message: string; onConfirm: () => void }>(null)
+  const [viewingMember, setViewingMember] = useState<Member | null>(null)
 
   const debouncedSearch = useDebounce(search)
 
@@ -259,6 +375,7 @@ export default function MembresTab() {
               member={member}
               roleName={roleMap[member.associationRoleKey]}
               onAction={(type) => action(member.id, type)}
+              onView={() => setViewingMember(member)}
               disabled={isPending}
             />
           ))}
@@ -296,6 +413,19 @@ export default function MembresTab() {
         onCancel={() => setConfirmPending(null)}
         danger
       />
+
+      {viewingMember && (
+        <MemberDetailModal
+          member={viewingMember}
+          roleMap={roleMap}
+          onClose={() => setViewingMember(null)}
+          onSaved={(msg) => {
+            setViewingMember(null)
+            setFeedback({ message: msg, type: 'success' })
+            load(page, debouncedSearch, isActive)
+          }}
+        />
+      )}
     </div>
   )
 }

@@ -53,6 +53,7 @@ type Errors = Record<string, string>;
 
 interface ParentData {
   type: string;
+  typeOther: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -61,6 +62,7 @@ interface ParentData {
 
 const EMPTY_PARENT: ParentData = {
   type: "Mère",
+  typeOther: "",
   firstName: "",
   lastName: "",
   email: "",
@@ -274,7 +276,7 @@ function GenericForm({
     { name: "city_code",  type: "text",     label: "Code postal",       placeholder: "Ex: 80000",          required: true,  value: "" },
     { name: "city",       type: "text",     label: "Ville",             placeholder: "Ville",              required: false, value: "" },
     { name: "dateOfBirth",type: "date",     label: "Date de naissance",                                    required: false, value: "" },
-    { name: "sexe",       type: "select",   label: "Genre",                                                required: false, value: "",
+    { name: "sexe",       type: "select",   label: "Sexe",                                                required: false, value: "",
       options: [{ value: "Homme", label: "Homme" }, { value: "Femme", label: "Femme" }] },
     { name: "phone",      type: "phone",    label: "Téléphone",         placeholder: "Ex: 06 12 34 56 78", required: false, value: "" },
     { name: "password",   type: "password", label: "Mot de passe",                                         required: true,  value: "",
@@ -423,7 +425,7 @@ function CadetForm({
     { name: "firstname",   type: "text",     label: "Prénom",            placeholder: "Prénom",             required: true,  value: "" },
     { name: "lastname",    type: "text",     label: "Nom",               placeholder: "Nom",                required: true,  value: "" },
     { name: "dateOfBirth", type: "date",     label: "Date de naissance",                                    required: true,  value: "" },
-    { name: "sexe",        type: "select",   label: "Genre",                                                required: true,  value: "",
+    { name: "sexe",        type: "select",   label: "Sexe",                                                required: true,  value: "",
       options: [{ value: "Homme", label: "Homme" }, { value: "Femme", label: "Femme" }] },
     { name: "email",       type: "email",    label: "Email",             placeholder: "votre@email.com",    required: true,  value: "" },
     { name: "phone",       type: "phone",    label: "Téléphone",         placeholder: "Ex: 06 12 34 56 78", required: false, value: "" },
@@ -450,6 +452,8 @@ function CadetForm({
       e.consent = "Vous devez obtenir l'autorisation de votre responsable légal";
     parents.forEach((p, i) => {
       const pfx = `parent${i}`;
+      if (p.type === "Autre" && !p.typeOther.trim())
+        e[`${pfx}_typeOther`] = "Précisez le type de responsable";
       if (!p.firstName || p.firstName.length < 2) e[`${pfx}_firstName`] = "Prénom requis";
       if (!p.lastName || p.lastName.length < 2) e[`${pfx}_lastName`] = "Nom requis";
       if (!p.email || !EMAIL_REGEX.test(p.email)) e[`${pfx}_email`] = "Email valide requis";
@@ -491,6 +495,7 @@ function CadetForm({
         ...(Object.keys(customFieldsData).length > 0 && { customFields: customFieldsData }),
         parent: {
           typeParent: parents[0].type,
+          ...(parents[0].type === "Autre" && { typeParentOther: parents[0].typeOther.trim() }),
           firstNameParent: parents[0].firstName,
           lastNameParent: parents[0].lastName,
           emailParent: parents[0].email,
@@ -499,6 +504,7 @@ function CadetForm({
         ...(parents[1] && {
           parent2: {
             typeParent: parents[1].type,
+            ...(parents[1].type === "Autre" && { typeParentOther: parents[1].typeOther.trim() }),
             firstNameParent: parents[1].firstName,
             lastNameParent: parents[1].lastName,
             emailParent: parents[1].email,
@@ -641,6 +647,29 @@ function CadetForm({
                         </option>
                       ))}
                     </select>
+
+                    {parent.type === "Autre" && (
+                      <div className="grid gap-1.5 mt-2">
+                        <label
+                          htmlFor={`parent${i}_typeOther`}
+                          className="text-sm font-medium"
+                        >
+                          Préciser le type <span className="text-destructive">*</span>
+                        </label>
+                        <Input
+                          id={`parent${i}_typeOther`}
+                          value={parent.typeOther}
+                          onChange={(e) => updateParent(i, { typeOther: e.target.value })}
+                          placeholder="Ex : Grand-parent, Oncle, Tante…"
+                          className="bg-card"
+                        />
+                        {parentErrors[`parent${i}_typeOther`] && (
+                          <p className="text-xs text-destructive">
+                            {parentErrors[`parent${i}_typeOther`]}
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">

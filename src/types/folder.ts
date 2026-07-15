@@ -34,6 +34,7 @@ export interface Folder extends FolderBasic {
   allowUpload: boolean
   allowDownload: boolean
   allowDelete: boolean
+  allowedRoles?: string[]
   sortOrder: number
   isActive: boolean
   isPrivate: boolean

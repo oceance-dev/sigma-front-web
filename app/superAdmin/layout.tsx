@@ -6,7 +6,7 @@ import { useAuth } from '@/src/context/auth-context'
 import Header from '@/src/layouts/header'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
-import { Activity, Building2, Home, Receipt, Shield, Users, Zap } from 'lucide-react'
+import { Activity, Building2, Home, Newspaper, Receipt, Shield, Users, Zap } from 'lucide-react'
 
 const SA_NAV = [
   { label: 'Tableau de bord', href: '/superAdmin',              icon: Home      },
@@ -16,6 +16,7 @@ const SA_NAV = [
   { label: 'Plans',           href: '/superAdmin/plans',        icon: Zap       },
   { label: 'Rôles',           href: '/superAdmin/roles',        icon: Shield    },
   { label: 'Rate Limits',     href: '/superAdmin/rate-limits',  icon: Activity  },
+  { label: 'Nouveautés',      href: '/superAdmin/news',         icon: Newspaper },
 ]
 
 export default function SuperAdminLayout({ children }: { children: React.ReactNode }) {

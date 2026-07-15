@@ -34,10 +34,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
 
     const hasAccess = association?.isTrial || association?.hasValidSubscription;
-    const onBillingPage = pathname === '/dashboard/plan' || pathname === '/dashboard/billing';
+    const isAdmin = roleKey === '1';
+    const onAccessPage = pathname === '/dashboard/plan' || pathname === '/dashboard/billing' || pathname === '/dashboard/acces-suspendu';
 
-    if (!hasAccess && !onBillingPage) {
-      router.replace('/dashboard/plan');
+    if (!hasAccess && !onAccessPage) {
+      router.replace(isAdmin ? '/dashboard/plan' : '/dashboard/acces-suspendu');
     }
   }, [isAuthenticated, isLoading, user, association, router, pathname]);
 

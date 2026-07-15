@@ -538,7 +538,7 @@ export default function AssociationInscription() {
                 </Field>
                 <div className="grid gap-1.5">
                   <Label>
-                    Genre
+                    Sexe
                     <span className="ml-1 text-xs text-muted-foreground">(optionnel)</span>
                   </Label>
                   <div className="flex items-center gap-4 h-9">

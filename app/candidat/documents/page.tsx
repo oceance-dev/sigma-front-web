@@ -222,6 +222,9 @@ export default function CandidatDocumentsPage() {
   }
 
   const remaining = (completion?.total ?? 0) - (completion?.completed ?? 0)
+  // Garde-fou local : tous les documents obligatoires doivent avoir été fournis
+  const missingRequired = requirements.filter((r) => r.isRequired && !r.status.uploaded).length
+  const canReallySubmit = canSubmit && missingRequired === 0
 
   return (
     <div className="flex flex-col gap-5 max-w-2xl">
@@ -315,7 +318,7 @@ export default function CandidatDocumentsPage() {
 
       {/* ── Bouton soumettre ──────────────────────────── */}
       {statut === 'notStarted' || statut === 'pending' ? (
-        canSubmit ? (
+        canReallySubmit ? (
           <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 flex items-center justify-between gap-4">
             <div>
               <p className="text-sm font-medium text-foreground">Dossier complet !</p>
@@ -326,10 +329,12 @@ export default function CandidatDocumentsPage() {
               {isPending ? 'Soumission…' : 'Soumettre'}
             </Button>
           </div>
-        ) : completion && completion.completed > 0 ? (
+        ) : (completion && completion.completed > 0) || missingRequired > 0 ? (
           <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
             <Loader2 size={14} />
-            Complétez tous les documents requis pour pouvoir soumettre.
+            {missingRequired > 0
+              ? `Il reste ${missingRequired} document${missingRequired > 1 ? 's' : ''} obligatoire${missingRequired > 1 ? 's' : ''} à fournir pour pouvoir soumettre.`
+              : 'Complétez tous les documents requis pour pouvoir soumettre.'}
           </div>
         ) : null
       ) : statut === 'submitted' ? (

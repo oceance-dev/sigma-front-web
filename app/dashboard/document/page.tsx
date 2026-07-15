@@ -47,11 +47,9 @@ import DocumentViewerModal from '@/components/DocumentViewerModal'
 // ── Constantes ─────────────────────────────────────────────
 
 const FOLDER_VISIBILITY_OPTIONS = [
-  { value: 'private',    label: 'Privé' },
-  { value: 'restricted', label: 'Restreint' },
-  { value: 'staff',      label: 'Staff' },
-  { value: 'members',    label: 'Tous les membres' },
-  { value: 'public',     label: 'Public' },
+  { value: 'private',    label: 'Privé',            desc: 'Propriétaire uniquement' },
+  { value: 'restricted', label: 'Restreint',        desc: 'Rôles spécifiques (à choisir)' },
+  { value: 'members',    label: 'Tous les membres', desc: 'Accessible à tous les membres actifs' },
 ]
 
 const STATUS_CLASSES = {
@@ -88,15 +86,6 @@ const VISIBILITY_PRESETS = [
     active: 'border-amber-500 bg-amber-50',
   },
   {
-    value: 'staff',
-    label: 'Staff',
-    desc: 'Tous les membres du bureau',
-    Icon: UserCheck,
-    color: 'text-blue-600',
-    bg: 'bg-blue-50 border-blue-200',
-    active: 'border-blue-500 bg-blue-50',
-  },
-  {
     value: 'members',
     label: 'Membres',
     desc: 'Tous les membres actifs de l\'association',
@@ -117,6 +106,7 @@ const VISIBILITY_PRESETS = [
 ] as const
 
 interface PickedMember { id: string; fullName: string; email: string }
+interface AssocRole    { key: string; name: string; isActive: boolean }
 
 function VisibilityPicker({
   defaultValue = 'private',
@@ -127,8 +117,9 @@ function VisibilityPicker({
 }) {
   const [selected,      setSelected]      = useState(defaultValue)
   const [showRoles,     setShowRoles]     = useState(defaultRoles.length > 0)
-  const [roleInput,     setRoleInput]     = useState('')
   const [roles,         setRoles]         = useState<string[]>(defaultRoles)
+  const [availRoles,    setAvailRoles]    = useState<AssocRole[]>([])
+  const [loadingRoles,  setLoadingRoles]  = useState(false)
   const [showMembers,   setShowMembers]   = useState(false)
   const [memberSearch,  setMemberSearch]  = useState('')
   const [memberResults, setMemberResults] = useState<PickedMember[]>([])
@@ -136,6 +127,18 @@ function VisibilityPicker({
   const [pickedMembers, setPickedMembers] = useState<PickedMember[]>([])
   const [showDropdown,  setShowDropdown]  = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+
+  // Charger les rôles à l'ouverture de la section
+  useEffect(() => {
+    if (!showRoles || availRoles.length > 0) return
+    setLoadingRoles(true)
+    apiFetch('/roles').then(async (res) => {
+      if (!res.ok) return
+      const json = await res.json()
+      const list: AssocRole[] = json.data?.roles ?? json.data?.list ?? json.data ?? []
+      setAvailRoles(Array.isArray(list) ? list.filter((r) => r.isActive) : [])
+    }).catch(() => {}).finally(() => setLoadingRoles(false))
+  }, [showRoles])
 
   // Fermer le dropdown au clic extérieur
   useEffect(() => {
@@ -174,13 +177,11 @@ function VisibilityPicker({
     return () => clearTimeout(timer)
   }, [memberSearch, pickedMembers])
 
-  function addRole() {
-    const trimmed = roleInput.trim()
-    if (trimmed && !roles.includes(trimmed)) setRoles((r) => [...r, trimmed])
-    setRoleInput('')
+  function toggleRole(key: string) {
+    setRoles((prev) =>
+      prev.includes(key) ? prev.filter((r) => r !== key) : [...prev, key]
+    )
   }
-
-  function removeRole(r: string) { setRoles((prev) => prev.filter((x) => x !== r)) }
 
   function addMember(m: PickedMember) {
     setPickedMembers((prev) => [...prev, m])
@@ -249,36 +250,35 @@ function VisibilityPicker({
           <p className="text-xs text-muted-foreground">
             En plus du niveau d'accès, ces rôles pourront également voir le document.
           </p>
-          {roles.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {roles.map((r) => (
-                <span key={r} className="flex items-center gap-1 rounded-full border border-border bg-card px-2 py-0.5 text-xs font-medium text-foreground">
-                  {r}
-                  <button type="button" onClick={() => removeRole(r)} className="text-muted-foreground hover:text-destructive transition-colors">
-                    <X size={11} />
-                  </button>
-                </span>
-              ))}
+          {loadingRoles ? (
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground py-1">
+              <Loader2 size={12} className="animate-spin" /> Chargement des rôles…
+            </div>
+          ) : availRoles.length === 0 ? (
+            <p className="text-xs text-muted-foreground">Aucun rôle actif dans l'association.</p>
+          ) : (
+            <div className="flex flex-col divide-y divide-border rounded-lg border border-border overflow-hidden">
+              {availRoles.map((role) => {
+                const checked = roles.includes(role.key)
+                return (
+                  <label
+                    key={role.key}
+                    className={`flex items-center gap-2.5 px-3 py-2 cursor-pointer transition-colors ${
+                      checked ? 'bg-primary/5 hover:bg-primary/8' : 'bg-card hover:bg-muted/30'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleRole(role.key)}
+                      className="h-3.5 w-3.5 shrink-0 accent-primary"
+                    />
+                    <span className="text-xs text-foreground">{role.name}</span>
+                  </label>
+                )
+              })}
             </div>
           )}
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={roleInput}
-              onChange={(e) => setRoleInput(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addRole() } }}
-              placeholder="Ex: Directeur des formations…"
-              className="flex-1 h-8 rounded-md border border-input bg-transparent px-2.5 text-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:border-ring"
-            />
-            <button
-              type="button"
-              onClick={addRole}
-              disabled={!roleInput.trim()}
-              className="h-8 rounded-md border border-border px-2.5 text-xs font-medium text-foreground hover:bg-accent disabled:opacity-40 transition-colors"
-            >
-              Ajouter
-            </button>
-          </div>
         </div>
       )}
 
@@ -400,13 +400,13 @@ async function downloadDocument(id: string) {
 interface FolderFormData {
   name: string; description: string; visibility: string
   icon: string; allowUpload: boolean; allowDownload: boolean; allowDelete: boolean; isPinned: boolean
-  memberIds: string[]
+  memberIds: string[]; allowedRoles: string[]
 }
 
 const DEFAULT_FOLDER_FORM: FolderFormData = {
   name: '', description: '', visibility: 'members',
   icon: 'folder', allowUpload: true, allowDownload: true, allowDelete: false, isPinned: false,
-  memberIds: [],
+  memberIds: [], allowedRoles: [],
 }
 
 interface ExplorerState {
@@ -654,7 +654,8 @@ export default function DocumentPage() {
             visibility: editingFolder.visibility,
             icon: editingFolder.icon ?? 'folder', allowUpload: editingFolder.allowUpload,
             allowDownload: editingFolder.allowDownload, allowDelete: editingFolder.allowDelete,
-            isPinned: editingFolder.isPinned, memberIds: [] }}
+            isPinned: editingFolder.isPinned, memberIds: [],
+            allowedRoles: editingFolder.allowedRoles ?? [] }}
           onClose={() => setEditingFolder(null)}
           onSubmit={async (data) => {
             const res = await apiFetch(`/folders/update/${editingFolder.id}`, { method: 'PUT', body: JSON.stringify(data) })
@@ -1176,6 +1177,18 @@ function FolderFormModal({ title, initial, onClose, onSubmit }: {
   const [isSearching, setIsSearching] = useState(false)
   const [showDropdown, setShowDropdown] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const [availRoles,   setAvailRoles]   = useState<AssocRole[]>([])
+  const [loadingRoles, setLoadingRoles] = useState(false)
+
+  useEffect(() => {
+    setLoadingRoles(true)
+    apiFetch('/roles').then(async (res) => {
+      if (!res.ok) return
+      const json = await res.json()
+      const list: AssocRole[] = json.data?.roles ?? json.data?.list ?? json.data ?? []
+      setAvailRoles(Array.isArray(list) ? list.filter((r) => r.isActive) : [])
+    }).catch(() => {}).finally(() => setLoadingRoles(false))
+  }, [])
 
   useEffect(() => {
     function handler(e: MouseEvent) {
@@ -1217,6 +1230,12 @@ function FolderFormModal({ title, initial, onClose, onSubmit }: {
 
   function removeMember(id: string) { setPickedMembers((prev) => prev.filter((m) => m.id !== id)) }
 
+  function toggleRole(key: string) {
+    set({ allowedRoles: form.allowedRoles.includes(key)
+      ? form.allowedRoles.filter((r) => r !== key)
+      : [...form.allowedRoles, key] })
+  }
+
   function handleSubmit(e: FormEvent) {
     e.preventDefault(); setError(null)
     const finalForm = { ...form, memberIds: pickedMembers.map((m) => m.id) }
@@ -1233,12 +1252,75 @@ function FolderFormModal({ title, initial, onClose, onSubmit }: {
           <div className="grid gap-1.5"><Label htmlFor="f-name">Nom *</Label><Input id="f-name" value={form.name} onChange={(e) => set({ name: e.target.value })} placeholder="Mon dossier" required disabled={isPending} /></div>
           <div className="grid gap-1.5"><Label htmlFor="f-desc">Description</Label><Input id="f-desc" value={form.description} onChange={(e) => set({ description: e.target.value })} disabled={isPending} /></div>
           <div className="grid gap-1.5">
-            <Label htmlFor="f-vis">Visibilité</Label>
-            <select id="f-vis" value={form.visibility} onChange={(e) => set({ visibility: e.target.value })} disabled={isPending}
-              className="h-9 w-full rounded-md border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50">
-              {FOLDER_VISIBILITY_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </select>
+            <Label>Accès</Label>
+            <div className="flex flex-col gap-1.5">
+              {FOLDER_VISIBILITY_OPTIONS.map((opt) => {
+                const checked = form.visibility === opt.value
+                return (
+                  <label
+                    key={opt.value}
+                    className={`flex items-center gap-3 rounded-lg border px-3 py-2.5 cursor-pointer transition-colors ${
+                      checked ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/40'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="visibility"
+                      value={opt.value}
+                      checked={checked}
+                      onChange={() => set({ visibility: opt.value })}
+                      disabled={isPending}
+                      className="hidden"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-sm font-medium ${checked ? 'text-foreground' : 'text-muted-foreground'}`}>{opt.label}</p>
+                      <p className="text-xs text-muted-foreground">{opt.desc}</p>
+                    </div>
+                    <div className={`h-4 w-4 rounded-full border-2 shrink-0 flex items-center justify-center ${checked ? 'border-primary' : 'border-border'}`}>
+                      {checked && <div className="h-2 w-2 rounded-full bg-primary" />}
+                    </div>
+                  </label>
+                )
+              })}
+            </div>
           </div>
+
+          {form.visibility === 'restricted' && (
+            <div className="grid gap-1.5">
+              <Label>Rôles autorisés</Label>
+              {loadingRoles ? (
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground py-1">
+                  <Loader2 size={12} className="animate-spin" /> Chargement des rôles…
+                </div>
+              ) : availRoles.length === 0 ? (
+                <p className="text-xs text-muted-foreground">Aucun rôle disponible.</p>
+              ) : (
+                <div className="flex flex-col divide-y divide-border rounded-lg border border-border overflow-hidden">
+                  {availRoles.map((role) => {
+                    const checked = form.allowedRoles.includes(role.key)
+                    return (
+                      <label
+                        key={role.key}
+                        className={`flex items-center gap-2.5 px-3 py-2 cursor-pointer transition-colors ${
+                          checked ? 'bg-primary/5 hover:bg-primary/8' : 'bg-card hover:bg-muted/30'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleRole(role.key)}
+                          disabled={isPending}
+                          className="h-3.5 w-3.5 shrink-0 accent-primary"
+                        />
+                        <span className="text-xs text-foreground">{role.name}</span>
+                      </label>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="grid gap-1.5">
             <Label>Membres ayant accès</Label>
             {pickedMembers.length > 0 && (

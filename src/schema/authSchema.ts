@@ -56,7 +56,7 @@ export const SiginCadetSchema = z.object({
   firstname:   z.string().min(2, "Prénom requis (2+ caractères)"),
   lastname:    z.string().min(2, "Nom requis (2+ caractères)"),
   dateOfBirth: z.string().min(1, "Date de naissance requise"),
-  sexe:        z.enum(["Homme", "Femme"], { error: "Genre requis" }),
+  sexe:        z.enum(["Homme", "Femme"], { error: "Sexe requis" }),
   email:       z.email("Email invalide"),
   city_code:   z.string().regex(POSTAL_CODE_REGEX, "Code postal invalide (5 chiffres)"),
   city:        z.string().optional(),

@@ -1,4 +1,4 @@
-import { CreditCard, FileText, Home, Receipt, Users } from "lucide-react";
+import { CreditCard, FileText, Home, Newspaper, Receipt, Users } from "lucide-react";
 
 export interface NavItem {
   label: string
@@ -36,5 +36,10 @@ export const navItems: NavItem[] = [
     href: "/dashboard/billing",
     icon: <Receipt size={18} />,
     staffOnly: true,
+  },
+  {
+    label: "Nouveautés",
+    href: "/dashboard/news",
+    icon: <Newspaper size={18} />,
   },
 ];

@@ -47,17 +47,21 @@ export default function PlanPage() {
   function checkout(priceId: string) {
     setError(null)
     startTransition(async () => {
-      const res = await apiFetch('/billing/checkout', {
-        method: 'POST',
-        body: JSON.stringify({
-          priceId,
-          successRedirect: `${window.location.origin}/dashboard/plan?success=true`,
-          cancelRedirect: `${window.location.origin}/dashboard/plan`,
-        }),
-      })
-      const json = await res.json()
-      if (!res.ok) { setError(json.message ?? 'Erreur lors du paiement.'); return }
-      window.location.href = json.data.url
+      try {
+        const res = await apiFetch('/billing/checkout', {
+          method: 'POST',
+          body: JSON.stringify({
+            priceId,
+            successRedirect: `${window.location.origin}/dashboard/plan?success=true`,
+            cancelRedirect: `${window.location.origin}/dashboard/plan`,
+          }),
+        })
+        const json = await res.json()
+        if (!res.ok) { setError(json.message ?? 'Erreur lors du paiement.'); return }
+        window.location.href = json.data.url
+      } catch {
+        setError('Impossible de contacter le serveur.')
+      }
     })
   }
 
