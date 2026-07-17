@@ -6,6 +6,7 @@ export interface NavItem {
   icon: React.ReactNode
   cadetOnly?: boolean
   staffOnly?: boolean
+  hidden?: boolean
 }
 
 export const navItems: NavItem[] = [
@@ -30,5 +31,6 @@ export const navItems: NavItem[] = [
     href: "/dashboard/tresorerie",
     icon: <Wallet size={18} />,
     staffOnly: true,
+    hidden: true,
   },
 ]

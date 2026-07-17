@@ -10,7 +10,7 @@ export function useNavItems() {
   const isAdmin   = !!user?.isAdmin
 
   return navItems
-    .filter((item) => !item.staffOnly || isAdmin)
+    .filter((item) => !item.hidden && (!item.staffOnly || isAdmin))
     .map((item) => ({
       ...item,
       isActive:
