@@ -12,9 +12,6 @@ import { useSearchParams } from 'next/navigation'
 const AssociationTab         = lazy(() => import('./tabs/AssociationTab'))
 const LienInscriptionTab     = lazy(() => import('./tabs/LienInscriptionTab'))
 const FormulaireInscriptionTab = lazy(() => import('./tabs/FormulaireInscriptionTab'))
-const DocumentsRequisTab     = lazy(() => import('./tabs/DocumentsRequisTab'))
-const CampagnesTab           = lazy(() => import('./tabs/CampagnesTab'))
-const CandidaturesTab        = lazy(() => import('./tabs/CandidaturesTab'))
 const MembresTab             = lazy(() => import('./tabs/MembresTab'))
 const RolesTab               = lazy(() => import('./tabs/RolesTab'))
 const CadetsTab              = lazy(() => import('./tabs/CadetsTab'))
@@ -25,9 +22,6 @@ const ALL_TABS = [
   { id: 'association',            label: 'Association',         gendarmerieOnly: false, onlineOnly: false },
   { id: 'lien-inscription',       label: "Gestion d'inscription", gendarmerieOnly: false, onlineOnly: false },
   { id: 'formulaire-inscription', label: 'Formulaire',          gendarmerieOnly: false, onlineOnly: true  },
-  { id: 'documents-requis',       label: 'Documents requis',    gendarmerieOnly: false, onlineOnly: false },
-  { id: 'campagnes',              label: 'Campagnes',           gendarmerieOnly: false, onlineOnly: false },
-  { id: 'candidatures',           label: 'Candidatures',        gendarmerieOnly: false, onlineOnly: true  },
   { id: 'membres',                label: 'Membres',             gendarmerieOnly: false, onlineOnly: false },
   { id: 'roles',                  label: 'Rôles',               gendarmerieOnly: false, onlineOnly: false },
   { id: 'cadets',                 label: 'Cadets',              gendarmerieOnly: true,  onlineOnly: false },
@@ -72,20 +66,16 @@ export default function AssociationPage() {
 
   const canEdit              = user?.isAdmin ?? false
   const acceptsOnline        = !!association?.acceptOnlineRegistrations
-  const campaignsEnabled     = !!association?.campaignsEnabled
-  const documentsEnabled     = !!association?.documentsRequisEnabled
   const tabs = ALL_TABS.filter((t) => {
     if (t.gendarmerieOnly && !isGendarmerie) return false
     if (t.onlineOnly && !acceptsOnline) return false
-    if (t.id === 'campagnes' && !campaignsEnabled) return false
-    if (t.id === 'documents-requis' && !documentsEnabled) return false
     return true
   })
 
   // Ramène vers l'onglet association si l'onglet actif devient indisponible
   useEffect(() => {
     if (!tabs.some((t) => t.id === tab)) setTab('association')
-  }, [acceptsOnline, campaignsEnabled, documentsEnabled])
+  }, [acceptsOnline])
 
   async function toggleOnline() {
     if (!authAssociation?.id || !canEdit) return
@@ -163,17 +153,11 @@ export default function AssociationPage() {
           />
         )}
 
-        {tab === 'documents-requis' && <DocumentsRequisTab />}
-
         {tab === 'membres' && <MembresTab />}
 
         {tab === 'roles' && <RolesTab />}
 
         {tab === 'cadets' && <CadetsTab />}
-
-        {tab === 'candidatures' && <CandidaturesTab />}
-
-        {tab === 'campagnes' && <CampagnesTab />}
       </Suspense>
     </div>
   )

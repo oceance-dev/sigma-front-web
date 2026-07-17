@@ -6,6 +6,7 @@ import {
   Check,
   ClipboardList,
   FileText,
+  HeartPulse,
   Link2,
   Loader2,
   Mail,
@@ -192,8 +193,10 @@ export default function LienInscriptionTab({
   const [regenAssoc,        setRegenAssoc]        = useState(false)
   const [documentsEnabled,  setDocumentsEnabled]  = useState(association?.documentsRequisEnabled ?? false)
   const [campagnesEnabled,  setCampagnesEnabled]  = useState(association?.campaignsEnabled ?? false)
+  const [sanitaireEnabled,  setSanitaireEnabled]  = useState(association?.sanitaireEnabled ?? false)
   const [togglingDocs,      setTogglingDocs]      = useState(false)
   const [togglingCampaigns, setTogglingCampaigns] = useState(false)
+  const [togglingSanitaire, setTogglingSanitaire] = useState(false)
   const [toggleError,       setToggleError]       = useState<string | null>(null)
   const [confirmPending, setConfirmPending] = useState<null | { message: string; onConfirm: () => void }>(null)
 
@@ -204,7 +207,8 @@ export default function LienInscriptionTab({
     setCodes({ codeAsso: association?.codeAsso ?? null })
     setDocumentsEnabled(association?.documentsRequisEnabled ?? false)
     setCampagnesEnabled(association?.campaignsEnabled ?? false)
-  }, [association?.codeAsso, association?.documentsRequisEnabled, association?.campaignsEnabled])
+    setSanitaireEnabled(association?.sanitaireEnabled ?? false)
+  }, [association?.codeAsso, association?.documentsRequisEnabled, association?.campaignsEnabled, association?.sanitaireEnabled])
 
   const assocId   = authAssociation?.id  ?? null
   const slug      = authAssociation?.slug ?? null
@@ -226,20 +230,25 @@ export default function LienInscriptionTab({
     }
   }
 
-  async function toggleFeature(feature: 'documents' | 'campaigns') {
+  async function toggleFeature(feature: 'documents' | 'campaigns' | 'sanitaire') {
     if (!assocId || !canEdit) return
     setToggleError(null)
-    const setLoading = feature === 'documents' ? setTogglingDocs : setTogglingCampaigns
-    const route = feature === 'documents'
-      ? `/admin/association/${assocId}/toggle-documents-requis`
-      : `/admin/association/${assocId}/toggle-campaigns`
+    const setLoading =
+      feature === 'documents'  ? setTogglingDocs :
+      feature === 'campaigns'  ? setTogglingCampaigns :
+                                 setTogglingSanitaire
+    const route =
+      feature === 'documents'  ? `/admin/association/${assocId}/toggle-documents-requis` :
+      feature === 'campaigns'  ? `/admin/association/${assocId}/toggle-campaigns` :
+                                 `/admin/association/${assocId}/toggle-sanitaire`
     setLoading(true)
     try {
       const res  = await apiFetch(route, { method: 'POST' })
       const json = await res.json()
       if (res.ok) {
-        if (feature === 'documents') setDocumentsEnabled(json.data?.documentsRequisEnabled ?? !documentsEnabled)
-        else setCampagnesEnabled(json.data?.campaignsEnabled ?? !campagnesEnabled)
+        if (feature === 'documents')      setDocumentsEnabled(json.data?.documentsRequisEnabled ?? !documentsEnabled)
+        else if (feature === 'campaigns') setCampagnesEnabled(json.data?.campaignsEnabled ?? !campagnesEnabled)
+        else                              setSanitaireEnabled(json.data?.sanitaireEnabled ?? !sanitaireEnabled)
         onAssociationUpdated()
       } else {
         setToggleError(json.message ?? 'Une erreur est survenue.')
@@ -443,6 +452,18 @@ export default function LienInscriptionTab({
               disabled={!canEdit}
               onToggle={() => toggleFeature('documents')}
             />
+
+            {isGendarmerie && (
+              <FeatureToggleRow
+                icon={<HeartPulse size={16} className="text-primary" />}
+                title="Sanitaire"
+                description="Consultez rapidement les informations médicales des cadets de la promotion en cours."
+                enabled={sanitaireEnabled}
+                loading={togglingSanitaire}
+                disabled={!canEdit}
+                onToggle={() => toggleFeature('sanitaire')}
+              />
+            )}
           </div>
 
           {/* ── Désactiver ────────────────────────────── */}

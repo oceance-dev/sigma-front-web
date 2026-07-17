@@ -23,6 +23,7 @@ export interface AuthAssociation {
   type: AssociationType;
   isTrial: boolean;
   hasValidSubscription: boolean;
+  sanitaireEnabled?: boolean;
 }
 
 export interface AuthSession {

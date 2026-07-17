@@ -24,6 +24,7 @@ export interface Association {
   acceptOnlineRegistrations?: boolean
   documentsRequisEnabled?:   boolean
   campaignsEnabled?:         boolean
+  sanitaireEnabled?:         boolean
   onboardingDismissed?:      boolean
   afterRegistrationRedirect?: 'documents' | 'login'
   codeAsso?: string | null
