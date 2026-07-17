@@ -232,6 +232,22 @@ export default function CandidatDocumentsPage() {
       {/* ── Bannière campagne ─────────────────────────── */}
       <CampaignBanner campaign={campaign} nextCampaign={nextCampaign} statut={statut} />
 
+      {/* ── Bannière rendez-vous ──────────────────────── */}
+      {statut === 'appointment' && (
+        <div className="flex items-start gap-3 rounded-xl border border-primary/30 bg-primary/5 px-4 py-4">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10">
+            <Calendar size={18} className="text-primary" />
+          </div>
+          <div className="flex flex-col gap-0.5">
+            <p className="text-sm font-semibold text-primary">Vous avez un rendez-vous</p>
+            <p className="text-xs text-muted-foreground">
+              Votre dossier a été examiné et un rendez-vous d'accueil a été planifié.
+              Consultez vos emails pour connaître les détails (date, heure, lieu).
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* ── Titre ────────────────────────────────────── */}
       <div>
         <h1 className="text-xl font-bold text-foreground">Documents requis</h1>
@@ -343,6 +359,16 @@ export default function CandidatDocumentsPage() {
           <div>
             <p className="text-sm font-medium text-primary">Candidature soumise</p>
             <p className="text-xs text-muted-foreground">Votre dossier est en cours d'examen par l'équipe.</p>
+          </div>
+        </div>
+      ) : statut === 'appointment' ? (
+        <div className="flex items-start gap-2.5 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
+          <Calendar size={16} className="text-primary shrink-0 mt-0.5" />
+          <div className="flex flex-col gap-0.5">
+            <p className="text-sm font-medium text-primary">Rendez-vous planifié</p>
+            <p className="text-xs text-muted-foreground">
+              Un rendez-vous d'accueil a été planifié. Vérifiez vos emails pour les détails.
+            </p>
           </div>
         </div>
       ) : statut === 'approved' ? (

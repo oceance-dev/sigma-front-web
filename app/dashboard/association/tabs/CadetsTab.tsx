@@ -11,7 +11,10 @@ import { Input } from '@/components/ui/input'
 import { apiFetch } from '@/src/lib/api-client'
 import type { Member } from '@/src/types/member'
 
-export default function CadetsTab() {
+export default function CadetsTab({ isGendarmerie = true }: { isGendarmerie?: boolean }) {
+  const label  = isGendarmerie ? 'cadet' : 'licencié'
+  const labelP = isGendarmerie ? 'cadets' : 'licenciés'
+
   const [cadets, setCadets] = useState<Member[]>([])
   const [search, setSearch] = useState('')
   const [isLoading, setIsLoading] = useState(true)
@@ -20,11 +23,11 @@ export default function CadetsTab() {
   useEffect(() => {
     apiFetch('/admin/cadets')
       .then(async (r) => {
-        if (r.status === 403) { setError('Fonctionnalité réservée aux associations de gendarmerie.'); return }
+        if (r.status === 403) { setError('Accès non autorisé.'); return }
         const json = await r.json()
         setCadets(Array.isArray(json.data) ? json.data : [])
       })
-      .catch(() => setError('Impossible de charger les cadets.'))
+      .catch(() => setError(`Impossible de charger les ${labelP}.`))
       .finally(() => setIsLoading(false))
   }, [])
 
@@ -40,8 +43,8 @@ export default function CadetsTab() {
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <p className="text-sm font-medium text-foreground">Cadets</p>
-        <p className="text-xs text-muted-foreground">Liste des cadets de votre association.</p>
+        <p className="text-sm font-medium text-foreground capitalize">{labelP}</p>
+        <p className="text-xs text-muted-foreground">Liste des {labelP} de votre association.</p>
       </div>
 
       {error && (
@@ -53,7 +56,7 @@ export default function CadetsTab() {
       <div className="relative max-w-sm">
         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
         <Input
-          placeholder="Rechercher un cadet…"
+          placeholder={`Rechercher un ${label}…`}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="pl-9"
@@ -67,12 +70,12 @@ export default function CadetsTab() {
       ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center gap-2 py-16 text-center text-muted-foreground">
           <Users size={36} strokeWidth={1.5} />
-          <p className="text-sm">{search ? 'Aucun résultat.' : 'Aucun cadet pour le moment.'}</p>
+          <p className="text-sm">{search ? 'Aucun résultat.' : `Aucun ${label} pour le moment.`}</p>
         </div>
       ) : (
         <>
           <p className="text-xs text-muted-foreground">
-            {filtered.length} cadet{filtered.length > 1 ? 's' : ''}
+            {filtered.length} {filtered.length > 1 ? labelP : label}
             {search && ` · "${search}"`}
           </p>
           <div className="flex flex-col divide-y divide-border rounded-xl border border-border overflow-hidden">

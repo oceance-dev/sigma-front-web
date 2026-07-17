@@ -19,12 +19,12 @@ const CadetsTab              = lazy(() => import('./tabs/CadetsTab'))
 // ── Tabs config ────────────────────────────────────────────
 
 const ALL_TABS = [
-  { id: 'association',            label: 'Association',         gendarmerieOnly: false, onlineOnly: false },
+  { id: 'association',            label: 'Association',           gendarmerieOnly: false, onlineOnly: false },
   { id: 'lien-inscription',       label: "Gestion d'inscription", gendarmerieOnly: false, onlineOnly: false },
-  { id: 'formulaire-inscription', label: 'Formulaire',          gendarmerieOnly: false, onlineOnly: true  },
-  { id: 'membres',                label: 'Membres',             gendarmerieOnly: false, onlineOnly: false },
-  { id: 'roles',                  label: 'Rôles',               gendarmerieOnly: false, onlineOnly: false },
-  { id: 'cadets',                 label: 'Cadets',              gendarmerieOnly: true,  onlineOnly: false },
+  { id: 'formulaire-inscription', label: 'Formulaire',            gendarmerieOnly: false, onlineOnly: true  },
+  { id: 'membres',                label: 'Membres',               gendarmerieOnly: false, onlineOnly: false },
+  { id: 'roles',                  label: 'Rôles',                 gendarmerieOnly: false, onlineOnly: false },
+  { id: 'cadets',                 label: 'Cadets',                gendarmerieOnly: false, onlineOnly: false },
 ] as const
 
 type TabId = (typeof ALL_TABS)[number]['id']
@@ -42,7 +42,7 @@ function TabFallback() {
 // ── Page ───────────────────────────────────────────────────
 
 export default function AssociationPage() {
-  const { user, association: authAssociation } = useAuth()
+  const { user, association: authAssociation, hasPermission } = useAuth()
   const searchParams  = useSearchParams()
   const isGendarmerie = authAssociation?.type === 'gendarmerie'
   const [tab, setTab] = useState<TabId>(() => {
@@ -64,11 +64,13 @@ export default function AssociationPage() {
 
   useEffect(() => { load() }, [load])
 
-  const canEdit              = user?.isAdmin ?? false
-  const acceptsOnline        = !!association?.acceptOnlineRegistrations
+  const canEdit      = user?.isAdmin ?? false
+  const acceptsOnline = !!association?.acceptOnlineRegistrations
+  const canSeeCadets = (user?.isAdmin ?? false) || hasPermission('cadets.read')
   const tabs = ALL_TABS.filter((t) => {
     if (t.gendarmerieOnly && !isGendarmerie) return false
     if (t.onlineOnly && !acceptsOnline) return false
+    if (t.id === 'cadets' && !canSeeCadets) return false
     return true
   })
 
@@ -113,7 +115,7 @@ export default function AssociationPage() {
                 : 'border-transparent text-muted-foreground hover:text-foreground'
             }`}
           >
-            {t.label}
+            {t.id === 'cadets' ? (isGendarmerie ? 'Cadets' : 'Licenciés') : t.label}
           </button>
         ))}
       </div>
@@ -157,7 +159,7 @@ export default function AssociationPage() {
 
         {tab === 'roles' && <RolesTab />}
 
-        {tab === 'cadets' && <CadetsTab />}
+        {tab === 'cadets' && <CadetsTab isGendarmerie={isGendarmerie} />}
       </Suspense>
     </div>
   )

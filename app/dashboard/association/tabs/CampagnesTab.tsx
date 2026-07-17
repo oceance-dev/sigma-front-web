@@ -41,6 +41,8 @@ interface Campaign {
   year: number
   status: CampaignStatus
   isOpen: boolean
+  campaignStartsAt: string | null
+  campaignEndsAt: string | null
   startsAt: string | null
   endsAt: string | null
   createdAt: string
@@ -80,11 +82,31 @@ function CampaignFormModal({ title, initial, onClose, onSaved }: {
 }) {
   const [state, action, isPending] = useActionState(
     async (_prev: CampaignFormState, formData: FormData): Promise<CampaignFormState> => {
+      const campaignStartsAt = (formData.get('campaignStartsAt') as string) || null
+      const campaignEndsAt   = (formData.get('campaignEndsAt')   as string) || null
+      const startsAt         = (formData.get('startsAt')         as string) || null
+      const endsAt           = (formData.get('endsAt')           as string) || null
+
+      if (campaignStartsAt && campaignEndsAt && campaignEndsAt < campaignStartsAt) {
+        return { error: 'La date de fin de campagne doit être postérieure à son ouverture.' }
+      }
+      if (startsAt && endsAt && endsAt < startsAt) {
+        return { error: 'La date de fermeture des candidatures doit être postérieure à leur ouverture.' }
+      }
+      if (campaignStartsAt && startsAt && startsAt < campaignStartsAt) {
+        return { error: 'L\'ouverture des candidatures ne peut précéder l\'ouverture de la campagne.' }
+      }
+      if (campaignEndsAt && endsAt && endsAt > campaignEndsAt) {
+        return { error: 'La fermeture des candidatures ne peut dépasser la fin de la campagne.' }
+      }
+
       const body: Record<string, unknown> = {
-        name:     (formData.get('name') as string).trim(),
-        year:     Number(formData.get('year')),
-        startsAt: (formData.get('startsAt') as string) || null,
-        endsAt:   (formData.get('endsAt') as string)   || null,
+        name:             (formData.get('name') as string).trim(),
+        year:             Number(formData.get('year')),
+        campaignStartsAt,
+        campaignEndsAt,
+        startsAt,
+        endsAt,
       }
       const url    = initial ? `/admin/campaigns/${initial.id}` : '/admin/campaigns'
       const method = initial ? 'PUT' : 'POST'
@@ -121,16 +143,32 @@ function CampaignFormModal({ title, initial, onClose, onSaved }: {
               <Label htmlFor="camp-year">Année *</Label>
               <Input id="camp-year" name="year" type="number" defaultValue={initial?.year ?? new Date().getFullYear()} required disabled={isPending} min={2020} max={2100} />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="grid gap-1.5">
-                <Label htmlFor="camp-start">Date d'ouverture</Label>
-                <Input id="camp-start" name="startsAt" type="date" defaultValue={toInputDate(initial?.startsAt)} disabled={isPending} />
+            <fieldset className="grid gap-2 rounded-lg border border-border p-3">
+              <legend className="px-1 text-xs font-medium text-muted-foreground">Période de la campagne</legend>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="grid gap-1.5">
+                  <Label htmlFor="camp-camp-start">Ouverture</Label>
+                  <Input id="camp-camp-start" name="campaignStartsAt" type="date" defaultValue={toInputDate(initial?.campaignStartsAt)} disabled={isPending} />
+                </div>
+                <div className="grid gap-1.5">
+                  <Label htmlFor="camp-camp-end">Fin</Label>
+                  <Input id="camp-camp-end" name="campaignEndsAt" type="date" defaultValue={toInputDate(initial?.campaignEndsAt)} disabled={isPending} />
+                </div>
               </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="camp-end">Date de clôture</Label>
-                <Input id="camp-end" name="endsAt" type="date" defaultValue={toInputDate(initial?.endsAt)} disabled={isPending} />
+            </fieldset>
+            <fieldset className="grid gap-2 rounded-lg border border-border p-3">
+              <legend className="px-1 text-xs font-medium text-muted-foreground">Période d'inscription des candidatures</legend>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="grid gap-1.5">
+                  <Label htmlFor="camp-start">Ouverture</Label>
+                  <Input id="camp-start" name="startsAt" type="date" defaultValue={toInputDate(initial?.startsAt)} disabled={isPending} />
+                </div>
+                <div className="grid gap-1.5">
+                  <Label htmlFor="camp-end">Clôture</Label>
+                  <Input id="camp-end" name="endsAt" type="date" defaultValue={toInputDate(initial?.endsAt)} disabled={isPending} />
+                </div>
               </div>
-            </div>
+            </fieldset>
           </div>
           <div className="flex justify-end gap-2 border-t border-border p-4">
             <Button type="button" variant="secondary" onClick={onClose} disabled={isPending}>Annuler</Button>
@@ -474,7 +512,7 @@ export default function CampagnesTab() {
                 <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
                 <p className="text-sm font-medium text-emerald-800">
                   Campagne active : <span className="font-bold">{activeCampaign.name}</span>
-                  {activeCampaign.endsAt && ` · jusqu'au ${fmtDate(activeCampaign.endsAt)}`}
+                  {activeCampaign.campaignEndsAt && ` · jusqu'au ${fmtDate(activeCampaign.campaignEndsAt)}`}
                 </p>
               </div>
               <Button
@@ -510,10 +548,18 @@ export default function CampagnesTab() {
                       <p className="text-sm font-medium text-foreground">{camp.name}</p>
                       <span className="text-xs text-muted-foreground">({camp.year})</span>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {camp.startsAt ? `Du ${fmtDate(camp.startsAt)}` : 'Début non défini'}
-                      {camp.endsAt  ? ` au ${fmtDate(camp.endsAt)}` : ''}
-                    </p>
+                    <div className="mt-0.5 flex flex-col gap-0.5">
+                      <p className="text-xs text-muted-foreground">
+                        <span className="font-medium">Campagne :</span>{' '}
+                        {camp.campaignStartsAt ? `du ${fmtDate(camp.campaignStartsAt)}` : 'début non défini'}
+                        {camp.campaignEndsAt  ? ` au ${fmtDate(camp.campaignEndsAt)}` : ''}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        <span className="font-medium">Candidatures :</span>{' '}
+                        {camp.startsAt ? `du ${fmtDate(camp.startsAt)}` : 'début non défini'}
+                        {camp.endsAt  ? ` au ${fmtDate(camp.endsAt)}` : ''}
+                      </p>
+                    </div>
                   </button>
                   <CampaignBadge status={camp.status} />
                   <div className="flex gap-1 shrink-0">
