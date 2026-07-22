@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { apiFetch } from '@/src/lib/api-client'
+import { ROLE_KEYS } from '@/src/lib/role-keys'
 import type { Member, MemberMeta } from '@/src/types/member'
 import { useDebounce } from '@/src/hooks/useDebounce'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
@@ -29,9 +30,6 @@ const MEMBER_STATUS_OPTIONS = [
   { value: 'true',  label: 'Actifs' },
   { value: 'false', label: 'En attente / Inactifs' },
 ]
-
-// Rôle 6 = Candidat — ils ont leur propre onglet Candidatures
-const CANDIDATE_ROLE_KEY = '6'
 
 // ── MemberRow ──────────────────────────────────────────────
 
@@ -271,9 +269,9 @@ export default function MembresTab() {
     const res = await apiFetch(`/admin/members?${params}`)
     if (res.ok) {
       const json = await res.json()
-      // Exclure les candidats (rôle 6) — ils appartiennent à l'onglet Candidatures
+      // Exclure les candidats — ils appartiennent à l'onglet Candidatures
       const all: Member[] = json.data.members ?? []
-      setMembers(all.filter((m) => m.associationRoleKey !== CANDIDATE_ROLE_KEY))
+      setMembers(all.filter((m) => m.associationRoleKey !== ROLE_KEYS.CANDIDAT))
       setMeta(json.data.meta ?? null)
     }
     setIsLoading(false)

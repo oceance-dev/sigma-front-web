@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/src/context/auth-context';
+import { ROLE_KEYS } from '@/src/lib/role-keys';
 import BottomNav from "@/src/layouts/bottom-nav";
 import Header from "@/src/layouts/header";
 import Sidebar from "@/src/layouts/sidebar";
@@ -22,19 +23,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const roleKey       = user?.associationRoleKey ?? '';
     const isGendarmerie = association?.type === 'gendarmerie';
 
-    if (roleKey === '4' || (isGendarmerie && roleKey === '6')) {
+    if (roleKey === ROLE_KEYS.CANDIDAT) {
       router.replace('/candidat/documents');
       return;
     }
 
-    if (isGendarmerie && roleKey === '5') {
+    if (isGendarmerie && roleKey === ROLE_KEYS.MEMBER) {
       const cadetAllowed = pathname === '/dashboard' || pathname.startsWith('/dashboard/document');
       if (!cadetAllowed) router.replace('/dashboard');
       return;
     }
 
     const hasAccess = association?.isTrial || association?.hasValidSubscription;
-    const isAdmin = roleKey === '1';
+    const isAdmin = roleKey === ROLE_KEYS.ADMIN;
     const onAccessPage = pathname === '/dashboard/plan' || pathname === '/dashboard/billing' || pathname === '/dashboard/acces-suspendu';
 
     if (!hasAccess && !onAccessPage) {
@@ -53,9 +54,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   if (!isAuthenticated || !!user?.isSuperAdmin) return null;
 
   // Ne pas afficher le layout dashboard pour les candidats — ils sont redirigés
-  const roleKey       = user?.associationRoleKey ?? ''
-  const isGendarmerie = association?.type === 'gendarmerie'
-  if (roleKey === '4' || (isGendarmerie && roleKey === '6')) return null;
+  const roleKey = user?.associationRoleKey ?? ''
+  if (roleKey === ROLE_KEYS.CANDIDAT) return null;
 
   return (
     <>

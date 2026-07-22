@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { PasswordInput } from '@/components/PasswordInput'
 import { useAuth } from '@/src/context/auth-context'
+import { ROLE_KEYS } from '@/src/lib/role-keys'
 
 function LoginForm() {
   const { login } = useAuth()
@@ -41,7 +42,7 @@ function LoginForm() {
       setIsPending(false)
     } else {
       const role = result.user?.associationRoleKey
-      router.push(role === '6' ? '/candidat/documents' : '/dashboard')
+      router.push(role === ROLE_KEYS.CANDIDAT ? '/candidat/documents' : '/dashboard')
     }
   }
 

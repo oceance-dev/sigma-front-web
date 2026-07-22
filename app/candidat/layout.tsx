@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/src/context/auth-context'
+import { ROLE_KEYS } from '@/src/lib/role-keys'
 import Header from '@/src/layouts/header'
 import { FileText } from 'lucide-react'
 import Link from 'next/link'
@@ -31,18 +32,16 @@ function CandidatSidebar() {
 }
 
 export default function CandidatLayout({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading, user, association } = useAuth()
+  const { isAuthenticated, isLoading, user } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
     if (isLoading) return
     if (!isAuthenticated) { router.replace('/login'); return }
 
-    const roleKey       = user?.associationRoleKey ?? ''
-    const isGendarmerie = association?.type === 'gendarmerie'
-    const isCandidatRole = roleKey === '4' || (isGendarmerie && roleKey === '6')
-    if (!isCandidatRole) router.replace('/dashboard')
-  }, [isAuthenticated, isLoading, user, association, router])
+    const roleKey = user?.associationRoleKey ?? ''
+    if (roleKey !== ROLE_KEYS.CANDIDAT) router.replace('/dashboard')
+  }, [isAuthenticated, isLoading, user, router])
 
   if (isLoading) {
     return (

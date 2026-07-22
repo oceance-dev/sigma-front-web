@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { apiFetch } from '@/src/lib/api-client'
+import { ROLE_KEYS } from '@/src/lib/role-keys'
 import type { Member } from '@/src/types/member'
 
 export default function CadetsTab({ isGendarmerie = true }: { isGendarmerie?: boolean }) {
@@ -25,7 +26,9 @@ export default function CadetsTab({ isGendarmerie = true }: { isGendarmerie?: bo
       .then(async (r) => {
         if (r.status === 403) { setError('Accès non autorisé.'); return }
         const json = await r.json()
-        setCadets(Array.isArray(json.data) ? json.data : [])
+        const all: Member[] = Array.isArray(json.data) ? json.data : []
+        // Rôle 5 uniquement : cadets (gendarmerie) ou licenciés (autres types)
+        setCadets(all.filter((m) => m.associationRoleKey === ROLE_KEYS.MEMBER))
       })
       .catch(() => setError(`Impossible de charger les ${labelP}.`))
       .finally(() => setIsLoading(false))
