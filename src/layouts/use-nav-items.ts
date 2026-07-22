@@ -6,7 +6,7 @@ import { navItems } from './nav-items'
 
 export function useNavItems() {
   const pathname          = usePathname()
-  const { user, association } = useAuth()
+  const { user, association, hasPermission } = useAuth()
   const isAdmin           = !!user?.isAdmin
   const isGendarmerie     = association?.type === 'gendarmerie'
   const sanitaireEnabled  = !!association?.sanitaireEnabled
@@ -14,13 +14,15 @@ export function useNavItems() {
   return navItems
     .filter((item) => {
       if (item.hidden) return false
-      if (item.staffOnly && !isAdmin) return false
+      // staffOnly = réservé aux admins, sauf si une permission spécifique y donne accès
+      if (item.staffOnly && !isAdmin && !(item.permission && hasPermission(item.permission))) return false
       if (item.gendarmerieOnly && !isGendarmerie) return false
       if (item.requiresSanitaire && !sanitaireEnabled) return false
       return true
     })
     .map((item) => ({
       ...item,
+      label: item.id === 'cadets' ? (isGendarmerie ? 'Cadets' : 'Licenciés') : item.label,
       isActive:
         item.href === '/dashboard'
           ? pathname === '/dashboard'

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { AlertCircle, Loader2, Newspaper } from 'lucide-react'
 import { apiFetch } from '@/src/lib/api-client'
+import { markNewsSeen, reportLatestNewsFromEntries } from '@/src/lib/news-notifications'
 
 // ── Types ──────────────────────────────────────────────────
 
@@ -45,7 +46,11 @@ export default function NewsPage() {
     const res = await apiFetch('/news')
     if (res.ok) {
       const json = await res.json()
-      setEntries(json.data?.entries ?? json.data ?? [])
+      const list: NewsEntry[] = json.data?.entries ?? json.data ?? []
+      setEntries(list)
+      // L'utilisateur consulte les nouveautés → on efface la pastille du header
+      reportLatestNewsFromEntries(list)
+      markNewsSeen()
     } else {
       setError('Impossible de charger les nouveautés.')
     }

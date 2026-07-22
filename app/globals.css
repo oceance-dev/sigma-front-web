@@ -170,13 +170,13 @@ select {
         padding-top: env(safe-area-inset-top, 0px);
     }
     .dashboard-header-inner {
-        @apply flex h-16 items-center justify-between px-4;
+        @apply flex h-20 items-center justify-between px-4;
     }
 
     .dashboard-sidebar {
         @apply fixed left-0 bottom-0 z-20 w-64 flex-col bg-sidebar border-r border-sidebar-border overflow-y-auto;
         display: none;
-        top: calc(4rem + env(safe-area-inset-top, 0px));
+        top: calc(5rem + env(safe-area-inset-top, 0px));
         padding-left: env(safe-area-inset-left, 0px);
         padding-bottom: env(safe-area-inset-bottom, 0px);
     }
@@ -184,7 +184,7 @@ select {
     .dashboard-main {
         @apply bg-muted/40;
         min-height: 100dvh;
-        padding-top: calc(4rem + env(safe-area-inset-top, 0px) + 1.5rem);
+        padding-top: calc(5rem + env(safe-area-inset-top, 0px) + 1.5rem);
         padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px) + 1.5rem);
         padding-left: max(1.5rem, env(safe-area-inset-left, 0px));
         padding-right: max(1.5rem, env(safe-area-inset-right, 0px));
@@ -232,7 +232,7 @@ select {
         }
         .dashboard-main {
             margin-left: 16rem;
-            padding-top: calc(4rem + env(safe-area-inset-top, 0px) + 2rem);
+            padding-top: calc(5rem + env(safe-area-inset-top, 0px) + 2rem);
             padding-bottom: 2rem;
             padding-left: 2rem;
             padding-right: 2rem;

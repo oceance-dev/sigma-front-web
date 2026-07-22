@@ -45,11 +45,6 @@ export default function CadetsTab({ isGendarmerie = true }: { isGendarmerie?: bo
 
   return (
     <div className="flex flex-col gap-4">
-      <div>
-        <p className="text-sm font-medium text-foreground capitalize">{labelP}</p>
-        <p className="text-xs text-muted-foreground">Liste des {labelP} de votre association.</p>
-      </div>
-
       {error && (
         <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-4 py-2 text-sm text-destructive">
           <AlertCircle size={14} />{error}
