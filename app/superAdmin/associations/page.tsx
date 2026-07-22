@@ -2,7 +2,7 @@
 
 import { apiFetch } from '@/src/lib/api-client'
 import { useCallback, useEffect, useState, useTransition } from 'react'
-import { Building2, Check, Loader2, X } from 'lucide-react'
+import { Building2, CalendarPlus, Check, Loader2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -35,6 +35,7 @@ export default function SuperAdminAssociationsPage() {
   const [page, setPage] = useState(1)
   const [isLoading, setIsLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
+  const [detailTarget, setDetailTarget] = useState<Association | null>(null)
   const [feedback, setFeedback] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
   const [isPending, startTransition] = useTransition()
 
@@ -104,7 +105,14 @@ export default function SuperAdminAssociationsPage() {
       ) : (
         <div className="flex flex-col divide-y divide-border rounded-xl border border-border overflow-hidden">
           {associations.map((assoc) => (
-            <div key={assoc.id} className="flex items-center gap-4 bg-card px-4 py-3 hover:bg-muted/40 transition-colors">
+            <div
+              key={assoc.id}
+              role="button"
+              tabIndex={0}
+              onClick={() => setDetailTarget(assoc)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setDetailTarget(assoc) } }}
+              className="flex items-center gap-4 bg-card px-4 py-3 hover:bg-muted/40 transition-colors cursor-pointer outline-none focus-visible:bg-muted/40"
+            >
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
                 <Building2 size={16} className="text-primary" />
               </div>
@@ -117,11 +125,11 @@ export default function SuperAdminAssociationsPage() {
               </span>
               {assoc.status === 'pending' && (
                 <div className="flex gap-1 shrink-0">
-                  <button onClick={() => action(assoc.id, 'approve')} disabled={isPending}
+                  <button onClick={(e) => { e.stopPropagation(); action(assoc.id, 'approve') }} disabled={isPending}
                     className="flex h-7 w-7 items-center justify-center rounded text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors disabled:opacity-40" title="Approuver">
                     <Check size={14} />
                   </button>
-                  <button onClick={() => action(assoc.id, 'reject')} disabled={isPending}
+                  <button onClick={(e) => { e.stopPropagation(); action(assoc.id, 'reject') }} disabled={isPending}
                     className="flex h-7 w-7 items-center justify-center rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors disabled:opacity-40" title="Rejeter">
                     <X size={14} />
                   </button>
@@ -149,6 +157,14 @@ export default function SuperAdminAssociationsPage() {
         <CreateAssociationModal
           onClose={() => setShowCreate(false)}
           onSaved={(msg) => { setShowCreate(false); setFeedback({ message: msg, type: 'success' }); load(page, search) }}
+        />
+      )}
+
+      {detailTarget && (
+        <AssociationDetailModal
+          association={detailTarget}
+          onClose={() => setDetailTarget(null)}
+          onSaved={(msg) => { setDetailTarget(null); setFeedback({ message: msg, type: 'success' }); load(page, search) }}
         />
       )}
     </div>
@@ -316,6 +332,101 @@ function CreateAssociationModal({ onClose, onSaved }: {
           <Button type="submit" form="create-assoc-form" disabled={isPending}>
             {isPending ? 'Création…' : 'Créer l\'association'}
           </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const MIN_TRIAL_DAYS = 1
+const MAX_TRIAL_DAYS = 365
+
+function AssociationDetailModal({ association, onClose, onSaved }: {
+  association: Association
+  onClose: () => void
+  onSaved: (msg: string) => void
+}) {
+  const [days, setDays] = useState(14)
+  const [error, setError] = useState<string | null>(null)
+  const [isPending, startTransition] = useTransition()
+
+  // Le clamp n'est qu'un confort UI : le back reste l'autorité sur les bornes.
+  const clampedDays = Math.min(MAX_TRIAL_DAYS, Math.max(MIN_TRIAL_DAYS, Math.trunc(days) || MIN_TRIAL_DAYS))
+
+  function extendTrial(e: React.FormEvent) {
+    e.preventDefault()
+    setError(null)
+    startTransition(async () => {
+      const res = await apiFetch(`/super-admin/associations/${association.id}/extend-trial`, {
+        method: 'PATCH',
+        body: JSON.stringify({ days: clampedDays }),
+      })
+      const json = await res.json()
+      if (res.ok) { onSaved(json.message ?? `Essai prolongé de ${clampedDays} jour${clampedDays > 1 ? 's' : ''}.`) }
+      else setError(json.message ?? 'Une erreur est survenue.')
+    })
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
+      <div className="w-full max-w-md rounded-xl border border-border bg-card shadow-xl">
+        <div className="flex items-center justify-between border-b border-border px-4 py-3">
+          <h2 className="text-sm font-medium text-foreground truncate">{association.name}</h2>
+          <button onClick={onClose} className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-accent shrink-0">
+            <X size={14} />
+          </button>
+        </div>
+
+        <div className="flex flex-col gap-4 p-4">
+          <div className="flex flex-col gap-1 text-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Statut</span>
+              <span className={`rounded px-2 py-0.5 text-xs font-medium ${STATUS_CLASSES[association.status] ?? 'bg-muted text-muted-foreground'}`}>
+                {STATUS_LABELS[association.status] ?? association.status}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Ville</span>
+              <span className="text-foreground">{association.city}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Email</span>
+              <span className="text-foreground truncate max-w-[60%]">{association.email ?? '—'}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Période d'essai</span>
+              <span className="text-foreground">
+                {association.isTrial && association.trialEndsAt
+                  ? `Jusqu'au ${new Date(association.trialEndsAt).toLocaleDateString('fr-FR')}`
+                  : '—'}
+              </span>
+            </div>
+          </div>
+
+          <form onSubmit={extendTrial} className="flex flex-col gap-3 border-t border-border pt-4">
+            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+              <CalendarPlus size={15} className="text-primary" /> Prolonger la période d'essai
+            </div>
+            {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
+            <div className="flex items-end gap-2">
+              <div className="flex flex-col gap-1.5 flex-1">
+                <Label htmlFor="trial-days">Jours supplémentaires</Label>
+                <Input
+                  id="trial-days"
+                  type="number"
+                  min={MIN_TRIAL_DAYS}
+                  max={MAX_TRIAL_DAYS}
+                  value={days}
+                  onChange={(e) => setDays(Number(e.target.value))}
+                  disabled={isPending}
+                />
+              </div>
+              <Button type="submit" disabled={isPending}>
+                {isPending ? 'Envoi…' : `Ajouter ${clampedDays} j`}
+              </Button>
+            </div>
+          </form>
         </div>
       </div>
     </div>

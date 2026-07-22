@@ -29,6 +29,8 @@ export interface Association {
   afterRegistrationRedirect?: 'documents' | 'login'
   codeAsso?: string | null
   codeActivation?: string | null
+  isTrial?: boolean
+  trialEndsAt?: string | null
   createdAt: string
   updatedAt: string
 }
