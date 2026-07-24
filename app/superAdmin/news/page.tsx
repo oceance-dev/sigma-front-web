@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState, useTransition } from 'react'
 import { Newspaper, Pencil, Plus, Trash2, X, Loader2, AlertCircle } from 'lucide-react'
 import { apiFetch } from '@/src/lib/api-client'
+import { formatDate } from '@/src/lib/date-utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -33,9 +34,6 @@ function CategoryBadge({ category }: { category: NewsCategory }) {
   return <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${cfg.classes}`}>{cfg.label}</span>
 }
 
-function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
-}
 
 // ── Modal formulaire ───────────────────────────────────────
 
@@ -243,7 +241,7 @@ export default function SuperAdminNewsPage() {
                 </div>
                 <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{entry.content}</p>
                 <p className="text-[10px] text-muted-foreground mt-1.5">
-                  {entry.publishedAt ? `Publié le ${fmtDate(entry.publishedAt)}` : `Créé le ${fmtDate(entry.createdAt)}`}
+                  {entry.publishedAt ? `Publié le ${formatDate(entry.publishedAt)}` : `Créé le ${formatDate(entry.createdAt)}`}
                 </p>
               </div>
               <div className="flex gap-1 shrink-0">

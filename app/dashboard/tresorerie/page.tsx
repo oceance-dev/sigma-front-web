@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { apiFetch } from '@/src/lib/api-client'
+import { formatDateShort } from '@/src/lib/date-utils'
 import {
   EXPENSE_CATEGORIES, INCOME_CATEGORIES, PAYMENT_METHODS,
   type BudgetLine, type Transaction, type TransactionMeta, type TransactionType, type TreasuryStats,
@@ -21,10 +22,6 @@ const YEAR = new Date().getFullYear()
 
 function fmt(n: number) {
   return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n)
-}
-
-function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
 function categoryLabel(type: TransactionType, id: string) {
@@ -696,7 +693,7 @@ function TxRow({ tx, onEdit, onDelete }: { tx: Transaction; onEdit?: () => void;
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-foreground truncate">{tx.label}</p>
-        <p className="text-xs text-muted-foreground">{categoryLabel(tx.type, tx.category)} · {fmtDate(tx.date)}</p>
+        <p className="text-xs text-muted-foreground">{categoryLabel(tx.type, tx.category)} · {formatDateShort(tx.date)}</p>
       </div>
       <p className={`text-sm font-semibold shrink-0 ${isIncome ? 'text-emerald-600' : 'text-rose-600'}`}>
         {isIncome ? '+' : '-'}{fmt(tx.amount)}

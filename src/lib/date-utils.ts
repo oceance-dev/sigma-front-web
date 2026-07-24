@@ -1,5 +1,6 @@
 const LONG: Intl.DateTimeFormatOptions  = { day: 'numeric', month: 'long',  year: 'numeric' }
 const SHORT: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', year: 'numeric' }
+const MONTH: Intl.DateTimeFormatOptions = { month: 'long', year: 'numeric' }
 
 export function formatDate(iso: string | null | undefined): string {
   if (!iso) return '—'
@@ -9,6 +10,12 @@ export function formatDate(iso: string | null | undefined): string {
 export function formatDateShort(iso: string | null | undefined): string | null {
   if (!iso) return null
   return new Date(iso).toLocaleDateString('fr-FR', SHORT)
+}
+
+// Libellé mois + année (ex. « juillet 2026 ») — utilisé pour regrouper des listes.
+export function formatMonth(iso: string | null | undefined): string {
+  if (!iso) return '—'
+  return new Date(iso).toLocaleDateString('fr-FR', MONTH)
 }
 
 export function relativeDate(iso: string): string {

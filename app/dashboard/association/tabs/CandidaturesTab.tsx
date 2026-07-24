@@ -18,7 +18,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { apiFetch } from '@/src/lib/api-client'
-import { tokenStore } from '@/src/lib/token-store'
 import type { Document } from '@/src/types/document'
 import { useDebounce } from '@/src/hooks/useDebounce'
 import { ActionBtn } from './_shared'
@@ -280,10 +279,7 @@ function CandidatureDetailModal({ candidature, onClose, onRefresh, onFeedback, o
   const [isPending,  startTransition] = useTransition()
 
   async function downloadDoc(doc: Document) {
-    const token = tokenStore.get()
-    const res   = await fetch(`/api/sigma/candidatures/documents/download-url/${doc.id}`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    })
+    const res = await apiFetch(`/candidatures/documents/download-url/${doc.id}`)
     if (!res.ok) return
     const json = await res.json().catch(() => null)
     if (json?.data?.url) window.open(json.data.url, '_blank')

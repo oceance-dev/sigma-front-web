@@ -34,7 +34,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { formatDate } from '@/src/lib/date-utils'
+import { formatDate, formatMonth } from '@/src/lib/date-utils'
 import type { BillingPlan, Invoice } from '@/src/types/billing'
 
 // ── Types & données statiques ──────────────────────────────
@@ -623,7 +623,7 @@ function NouveautesSection() {
   }, [])
 
   const groups = entries.reduce<{ label: string; items: NewsEntry[] }[]>((acc, entry) => {
-    const label = new Date(entry.publishedAt).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
+    const label = formatMonth(entry.publishedAt)
     const existing = acc.find(g => g.label === label)
     if (existing) existing.items.push(entry)
     else acc.push({ label, items: [entry] })

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { AlertCircle, Loader2, Newspaper } from 'lucide-react'
 import { apiFetch } from '@/src/lib/api-client'
+import { formatDate, formatMonth } from '@/src/lib/date-utils'
 import { markNewsSeen, reportLatestNewsFromEntries } from '@/src/lib/news-notifications'
 
 // ── Types ──────────────────────────────────────────────────
@@ -30,9 +31,6 @@ function CategoryBadge({ category }: { category: NewsCategory }) {
   return <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${cfg.classes}`}>{cfg.label}</span>
 }
 
-function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
-}
 
 // ── Page ───────────────────────────────────────────────────
 
@@ -61,7 +59,7 @@ export default function NewsPage() {
 
   // Grouper par mois/année
   const groups = entries.reduce<{ label: string; items: NewsEntry[] }[]>((acc, entry) => {
-    const label = new Date(entry.publishedAt).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
+    const label = formatMonth(entry.publishedAt)
     const existing = acc.find((g) => g.label === label)
     if (existing) existing.items.push(entry)
     else acc.push({ label, items: [entry] })
@@ -123,7 +121,7 @@ export default function NewsPage() {
                     <div className="flex flex-col gap-2 pb-4 min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         <CategoryBadge category={entry.category} />
-                        <span className="text-xs text-muted-foreground">{fmtDate(entry.publishedAt)}</span>
+                        <span className="text-xs text-muted-foreground">{formatDate(entry.publishedAt)}</span>
                       </div>
                       <p className="text-sm font-semibold text-foreground">{entry.title}</p>
                       <p className="text-sm text-muted-foreground whitespace-pre-line leading-relaxed">{entry.content}</p>

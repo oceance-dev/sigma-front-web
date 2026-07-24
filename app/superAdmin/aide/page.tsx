@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState, useTransition } from 'react'
+import { formatDate } from '@/src/lib/date-utils'
 import {
   AlertCircle,
   BookOpen,
@@ -54,12 +55,6 @@ interface HelpVideo {
 }
 
 type Tab = 'guides' | 'faqs' | 'videos'
-
-// ── Helpers ────────────────────────────────────────────────
-
-function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
-}
 
 // ── Toggle switch ──────────────────────────────────────────
 
@@ -303,7 +298,7 @@ function GuidesTab({ feedback, setFeedback }: { feedback: { message: string; typ
                   {!guide.published && <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold bg-muted text-muted-foreground">Brouillon</span>}
                 </div>
                 {guide.description && <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{guide.description}</p>}
-                <p className="text-[10px] text-muted-foreground mt-1">{guide.steps?.length ?? 0} étape{(guide.steps?.length ?? 0) > 1 ? 's' : ''} · Créé le {fmtDate(guide.createdAt)}</p>
+                <p className="text-[10px] text-muted-foreground mt-1">{guide.steps?.length ?? 0} étape{(guide.steps?.length ?? 0) > 1 ? 's' : ''} · Créé le {formatDate(guide.createdAt)}</p>
               </div>
               <RowActions onEdit={() => setEditing(guide)} onDelete={() => deleteGuide(guide)} disabled={isPending} />
             </div>
@@ -431,7 +426,7 @@ function FaqsTab({ feedback, setFeedback }: { feedback: { message: string; type:
                   {!faq.published && <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold bg-muted text-muted-foreground">Brouillon</span>}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{faq.answer}</p>
-                <p className="text-[10px] text-muted-foreground mt-1">Créé le {fmtDate(faq.createdAt)}</p>
+                <p className="text-[10px] text-muted-foreground mt-1">Créé le {formatDate(faq.createdAt)}</p>
               </div>
               <RowActions onEdit={() => setEditing(faq)} onDelete={() => deleteFaq(faq)} disabled={isPending} />
             </div>

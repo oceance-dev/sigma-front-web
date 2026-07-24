@@ -39,9 +39,11 @@ function doRefresh(): Promise<string | null> {
   return refreshing
 }
 
-function buildHeaders(token: string | null, base?: HeadersInit): Headers {
+// Ne pose Content-Type: application/json que pour les bodies JSON.
+// Pour un FormData, on laisse le navigateur définir le boundary multipart.
+function buildHeaders(token: string | null, base?: HeadersInit, body?: BodyInit | null): Headers {
   const h = new Headers(base)
-  h.set('Content-Type', 'application/json')
+  if (!(body instanceof FormData)) h.set('Content-Type', 'application/json')
   if (token) h.set('Authorization', `Bearer ${token}`)
   return h
 }
@@ -49,7 +51,7 @@ function buildHeaders(token: string | null, base?: HeadersInit): Headers {
 export async function apiFetch(path: string, init: RequestInit = {}): Promise<Response> {
   const url = path.startsWith('http') ? path : `${API_BASE}${path}`
 
-  const res = await fetch(url, { ...init, headers: buildHeaders(tokenStore.get(), init.headers) })
+  const res = await fetch(url, { ...init, headers: buildHeaders(tokenStore.get(), init.headers, init.body) })
   if (res.status !== 401) return res
 
   const newToken = await doRefresh()
@@ -59,5 +61,5 @@ export async function apiFetch(path: string, init: RequestInit = {}): Promise<Re
     return res
   }
 
-  return fetch(url, { ...init, headers: buildHeaders(newToken, init.headers) })
+  return fetch(url, { ...init, headers: buildHeaders(newToken, init.headers, init.body) })
 }

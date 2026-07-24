@@ -1,7 +1,6 @@
 'use client'
 
 import { apiFetch } from '@/src/lib/api-client'
-import { tokenStore } from '@/src/lib/token-store'
 import { useAuth } from '@/src/context/auth-context'
 import {
   useActionState,
@@ -893,13 +892,11 @@ function UploadDocumentModal({ folderId, onClose, onUploaded }: {
       const allowedUserIds = formData.get('allowedUserIds') as string
       if (allowedUserIds && allowedUserIds !== '[]') fd.append('allowedUserIds', allowedUserIds)
 
-      const token = tokenStore.get()
-      const res = await fetch('/api/sigma/documents/users/upload-document', {
+      const res = await apiFetch('/documents/users/upload-document', {
         method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: fd,
       })
-      if (!res.ok) { const j = await res.json(); return { error: j.message ?? 'Erreur upload.' } }
+      if (!res.ok) { const j = await res.json().catch(() => ({})); return { error: j.message ?? 'Erreur upload.' } }
       onUploaded()
       return null
     },
