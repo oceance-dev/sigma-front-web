@@ -36,6 +36,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { DatePicker } from '@/components/ui/date-picker'
 import { Label } from '@/components/ui/label'
 import type { FolderBasic, FolderPermissions, FolderWithPermissions } from '@/src/types/folder'
 import type { Document, DocumentType } from '@/src/types/document'
@@ -927,11 +928,11 @@ function UploadDocumentModal({ folderId, onClose, onUploaded }: {
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-1.5">
               <Label htmlFor="up-date">Date du document</Label>
-              <Input id="up-date" name="documentDate" type="date" disabled={isPending} />
+              <DatePicker id="up-date" name="documentDate" disabled={isPending} />
             </div>
             <div className="grid gap-1.5">
               <Label htmlFor="up-exp">Expiration</Label>
-              <Input id="up-exp" name="expirationDate" type="date" disabled={isPending} />
+              <DatePicker id="up-exp" name="expirationDate" disabled={isPending} />
             </div>
           </div>
           <div className="grid gap-1.5">
@@ -1004,11 +1005,11 @@ function EditDocumentModal({ doc, onClose, onSaved }: {
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-1.5">
               <Label htmlFor="ed-date">Date document</Label>
-              <Input id="ed-date" name="documentDate" type="date" defaultValue={doc.documentDate ?? ''} disabled={isPending} />
+              <DatePicker id="ed-date" name="documentDate" defaultValue={doc.documentDate ?? ''} disabled={isPending} />
             </div>
             <div className="grid gap-1.5">
               <Label htmlFor="ed-exp">Expiration</Label>
-              <Input id="ed-exp" name="expirationDate" type="date" defaultValue={doc.expirationDate ?? ''} disabled={isPending} />
+              <DatePicker id="ed-exp" name="expirationDate" defaultValue={doc.expirationDate ?? ''} disabled={isPending} />
             </div>
           </div>
           <div className="grid gap-1.5">

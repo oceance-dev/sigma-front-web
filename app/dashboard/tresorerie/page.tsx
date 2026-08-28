@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { DatePicker } from '@/components/ui/date-picker'
 import { Label } from '@/components/ui/label'
 import { apiFetch } from '@/src/lib/api-client'
 import { formatDateShort } from '@/src/lib/date-utils'
@@ -595,7 +596,7 @@ function TransactionModal({ initial, onClose, onSaved }: {
               </div>
               <div className="grid gap-1.5">
                 <Label htmlFor="date">Date *</Label>
-                <Input id="date" name="date" type="date"
+                <DatePicker id="date" name="date"
                   defaultValue={initial?.date ?? new Date().toISOString().slice(0, 10)} required disabled={isPending} />
               </div>
             </div>

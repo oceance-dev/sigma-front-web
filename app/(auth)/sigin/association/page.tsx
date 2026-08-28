@@ -2,8 +2,7 @@
 
 import { useState, useTransition, type FormEvent } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { ArrowLeft, CheckCircle2, Mail, MapPin } from 'lucide-react';
+import { ArrowLeft, BadgeCheck, CheckCircle2, Clock, Mail, MapPin, Zap } from 'lucide-react';
 import { PasswordInput } from '@/components/PasswordInput';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,11 +14,26 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Label } from '@/components/ui/label';
 
 const API_BASE = '/api/sigma';
 const FR_PHONE = /^0[1-9]\d{8}$/;
 const NAME_RE = /^[a-zA-ZÀ-ÿ\s\-]+$/;
+
+// Les identifiants sont saisis avec des séparateurs (copier-coller depuis un
+// document officiel) : on ne garde que la valeur canonique attendue par l'API.
+const normalizeSiret = (v: string) => v.replace(/\D/g, '').slice(0, 14);
+const normalizeRna = (v: string) => {
+  const s = v.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  return (s.startsWith('W') ? 'W' : '') + s.replace(/\D/g, '').slice(0, 9);
+};
+
+/** Affichage groupé du SIRET : SIREN (3-3-3) + NIC (5). */
+function formatSiret(digits: string) {
+  const parts = [digits.slice(0, 3), digits.slice(3, 6), digits.slice(6, 9), digits.slice(9, 14)];
+  return parts.filter(Boolean).join(' ');
+}
 
 // ── Validation ─────────────────────────────────────────────
 
@@ -34,13 +48,13 @@ function validateForm(fd: FormData, sexe: string): Errors {
   if (!name || name.length < 3 || name.length > 255)
     e.assoc_name = 'Nom requis (3–255 caractères)';
 
-  const rna = get('rna');
+  const rna = normalizeRna(get('rna'));
   if (rna && !/^W\d{9}$/.test(rna))
     e.rna = 'Format : W + 9 chiffres (ex. W801234567)';
 
-  const siret = get('siret');
-  if (siret && !/^\d{14}$/.test(siret))
-    e.siret = 'Exactement 14 chiffres';
+  const siret = normalizeSiret(get('siret'));
+  if (siret && siret.length !== 14)
+    e.siret = 'Le SIRET comporte exactement 14 chiffres';
 
   const assocEmail = get('assoc_email');
   if (assocEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(assocEmail))
@@ -116,24 +130,52 @@ function pwChecks(pw: string) {
 // ── Types ──────────────────────────────────────────────────
 
 type DeptInfo = { code: string; nom: string };
+
+/** Renseigné par le backend après vérification RNA/SIRET (usage interne côté back-office). */
+type VerificationStatus = 'auto_verified' | 'failed' | 'unverified' | 'manual';
+
 type SuccessData = {
   message: string;
   data: {
-    association: { id: string; name: string; status: string };
+    association: {
+      id: string;
+      name: string;
+      status: string;
+      verificationStatus?: VerificationStatus;
+    };
     responsable: { firstName: string; lastName: string; email: string };
   };
 };
 
+/** Messages serveur d'unicité → formulation lisible côté utilisateur. */
+function humanizeServerError(field: string, message: string) {
+  const m = (message ?? '').toLowerCase();
+  const taken =
+    m.includes('unique') || m.includes('déjà') || m.includes('deja') ||
+    m.includes('already') || m.includes('exist');
+
+  if (!taken) return message;
+
+  switch (field) {
+    case 'association.siret': return 'Ce SIRET est déjà associé à un compte Sigma.';
+    case 'association.rna': return 'Ce RNA est déjà associé à un compte Sigma.';
+    case 'association.email': return 'Cet email est déjà associé à une association.';
+    case 'responsable.email': return 'Un compte existe déjà avec cet email.';
+    default: return message;
+  }
+}
+
 // ── Component ──────────────────────────────────────────────
 
 export default function AssociationInscription() {
-  const router = useRouter();
   const [errors, setErrors] = useState<Errors>({});
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [success, setSuccess] = useState<SuccessData | null>(null);
   const [isPending, startTransition] = useTransition();
 
   // Controlled fields
+  const [siret, setSiret] = useState('');
+  const [rna, setRna] = useState('');
   const [postalCode, setPostalCode] = useState('');
   const [dept, setDept] = useState<DeptInfo | null>(null);
   const [loadingDept, setLoadingDept] = useState(false);
@@ -182,12 +224,17 @@ export default function AssociationInscription() {
       try {
         const get = (k: string) => (fd.get(k) as string ?? '').trim();
 
+        // Champs optionnels : on omet la clé si vide — une chaîne vide échoue
+        // la regex côté API et renvoie un 422.
+        const siretValue = normalizeSiret(get('siret'));
+        const rnaValue = normalizeRna(get('rna'));
+
         const body = {
           association: {
             name: get('assoc_name'),
             type: assocType,
-            ...(get('rna') && { rna: get('rna') }),
-            ...(get('siret') && { siret: get('siret') }),
+            ...(rnaValue && { rna: rnaValue }),
+            ...(siretValue && { siret: siretValue }),
             ...(get('assoc_email') && { email: get('assoc_email') }),
             ...(get('assoc_phone') && { phone: get('assoc_phone').replace(/\s/g, '') }),
             ...(get('address') && { address: get('address') }),
@@ -224,8 +271,10 @@ export default function AssociationInscription() {
               'association.siret': 'siret',
               'association.email': 'assoc_email',
               'association.phone': 'assoc_phone',
+              'association.address': 'address',
               'association.city': 'city',
               'association.postalCode': 'postalCode',
+              'association.country': 'country',
               'responsable.firstName': 'firstName',
               'responsable.lastName': 'lastName',
               'responsable.email': 'resp_email',
@@ -235,9 +284,14 @@ export default function AssociationInscription() {
             };
             const serverErrors: Errors = {};
             for (const err of json.errors) {
-              serverErrors[map[err.field] ?? err.field] = err.message;
+              const field = map[err.field] ?? err.field;
+              serverErrors[field] = humanizeServerError(err.field, err.message);
             }
             setErrors(serverErrors);
+            const first = Object.keys(serverErrors)[0];
+            if (first) {
+              document.getElementById(first)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
           } else {
             setGlobalError(json.message ?? 'Une erreur est survenue. Veuillez réessayer.');
           }
@@ -245,8 +299,7 @@ export default function AssociationInscription() {
         }
 
         setSuccess(json);
-        const email = encodeURIComponent(body.responsable.email);
-        router.push(`/verify-email?email=${email}`);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       } catch {
         setGlobalError('Impossible de joindre le serveur. Vérifiez votre connexion.');
       }
@@ -256,31 +309,63 @@ export default function AssociationInscription() {
   // ── Success state ──────────────────────────────────────────
 
   if (success) {
+    const { association, responsable } = success.data;
+    const autoValidated = association.status === 'active';
+    const email = encodeURIComponent(responsable.email);
+
     return (
       <div className="w-full max-w-xl flex flex-col gap-4">
         <Card size="sm">
           <CardContent className="flex flex-col items-center gap-4 py-10 text-center">
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-              <CheckCircle2 size={28} className="text-primary" />
+              {autoValidated
+                ? <BadgeCheck size={28} className="text-primary" />
+                : <CheckCircle2 size={28} className="text-primary" />}
             </div>
+
             <div className="flex flex-col gap-1">
-              <p className="font-medium text-foreground">{success.data.association.name}</p>
-              <p className="text-sm text-muted-foreground max-w-xs">{success.message}</p>
-            </div>
-            <div className="flex items-start gap-2 rounded-lg bg-muted/50 px-4 py-3 text-left max-w-xs">
-              <Mail size={15} className="text-muted-foreground shrink-0 mt-0.5" />
-              <p className="text-xs text-muted-foreground">
-                Un email de confirmation a été envoyé à{' '}
-                <span className="font-medium text-foreground">{success.data.responsable.email}</span>.
-                Consultez votre boîte mail pour suivre l'activation de votre compte.
+              <p className="text-base font-semibold text-foreground">
+                {autoValidated ? 'Association vérifiée' : 'Inscription enregistrée'}
               </p>
+              <p className="font-medium text-foreground">{association.name}</p>
+              <p className="text-sm text-muted-foreground max-w-sm">{success.message}</p>
             </div>
-            <Link
-              href="/login"
-              className="mt-2 text-sm font-medium text-primary hover:underline underline-offset-4"
-            >
-              Retour à la connexion
-            </Link>
+
+            {autoValidated ? (
+              <>
+                <div className="flex items-start gap-2 rounded-lg bg-primary/5 border border-primary/20 px-4 py-3 text-left max-w-sm">
+                  <Mail size={15} className="text-primary shrink-0 mt-0.5" />
+                  <p className="text-xs text-muted-foreground">
+                    Votre espace est actif. Dernière étape : confirmez votre adresse email
+                    en cliquant sur le lien envoyé à{' '}
+                    <span className="font-medium text-foreground">{responsable.email}</span>.
+                  </p>
+                </div>
+                <Link
+                  href={`/verify-email?email=${email}`}
+                  className="mt-1 inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+                >
+                  Vérifier mon email
+                </Link>
+              </>
+            ) : (
+              <>
+                <div className="flex items-start gap-2 rounded-lg bg-muted/50 px-4 py-3 text-left max-w-sm">
+                  <Clock size={15} className="text-muted-foreground shrink-0 mt-0.5" />
+                  <p className="text-xs text-muted-foreground">
+                    Votre association va être validée par notre équipe. Vous recevrez un email
+                    à <span className="font-medium text-foreground">{responsable.email}</span>{' '}
+                    dès que votre espace sera activé.
+                  </p>
+                </div>
+                <Link
+                  href="/login"
+                  className="mt-2 text-sm font-medium text-primary hover:underline underline-offset-4"
+                >
+                  Retour à la connexion
+                </Link>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -343,28 +428,42 @@ export default function AssociationInscription() {
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <Field id="rna" label="RNA" error={errors.rna}>
-                  <Input
-                    id="rna"
-                    name="rna"
-                    placeholder="W801234567"
-                    disabled={disabled}
-                    maxLength={10}
-                    aria-invalid={!!errors.rna}
-                  />
-                </Field>
-                <Field id="siret" label="SIRET" error={errors.siret}>
-                  <Input
-                    id="siret"
-                    name="siret"
-                    inputMode="numeric"
-                    placeholder="12345678901234"
-                    disabled={disabled}
-                    maxLength={14}
-                    aria-invalid={!!errors.siret}
-                  />
-                </Field>
+              {/* SIRET : optionnel, mais c'est lui qui déclenche la validation
+                  automatique côté backend — d'où la mise en avant. */}
+              <div className="rounded-lg border border-primary/25 bg-primary/5 p-3 flex flex-col gap-2">
+                <div className="flex items-start gap-2">
+                  <Zap size={15} className="text-primary shrink-0 mt-0.5" />
+                  <div className="flex flex-col gap-1">
+                    <Label htmlFor="siret" className="text-sm">
+                      SIRET
+                      <span className="text-xs font-normal text-muted-foreground">(optionnel)</span>
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Accélère la validation de votre compte : avec un SIRET valide, votre
+                      espace est activé immédiatement.
+                    </p>
+                  </div>
+                </div>
+                <Input
+                  id="siret"
+                  name="siret"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  placeholder="123 456 789 01234"
+                  value={formatSiret(siret)}
+                  onChange={(e) => setSiret(normalizeSiret(e.target.value))}
+                  disabled={disabled}
+                  className="bg-background"
+                  aria-invalid={!!errors.siret}
+                  aria-describedby={errors.siret ? 'siret-error siret-help' : 'siret-help'}
+                />
+                {errors.siret && (
+                  <p id="siret-error" className="text-xs text-destructive">{errors.siret}</p>
+                )}
+                <p id="siret-help" className="text-xs text-muted-foreground">
+                  Pas de SIRET ? Ce n'est pas obligatoire : votre inscription sera simplement
+                  validée manuellement par notre équipe.
+                </p>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -436,15 +535,29 @@ export default function AssociationInscription() {
                 </Field>
               </div>
 
-              <Field id="country" label="Pays" required error={errors.country}>
-                <Input
-                  id="country"
-                  name="country"
-                  defaultValue="France"
-                  disabled={disabled}
-                  aria-invalid={!!errors.country}
-                />
-              </Field>
+              <div className="grid grid-cols-2 gap-3">
+                <Field id="country" label="Pays" required error={errors.country}>
+                  <Input
+                    id="country"
+                    name="country"
+                    defaultValue="France"
+                    disabled={disabled}
+                    aria-invalid={!!errors.country}
+                  />
+                </Field>
+                <Field id="rna" label="RNA" error={errors.rna}>
+                  <Input
+                    id="rna"
+                    name="rna"
+                    placeholder="W801234567"
+                    autoComplete="off"
+                    value={rna}
+                    onChange={(e) => setRna(normalizeRna(e.target.value))}
+                    disabled={disabled}
+                    aria-invalid={!!errors.rna}
+                  />
+                </Field>
+              </div>
 
             </div>
           </CardContent>
@@ -527,12 +640,10 @@ export default function AssociationInscription() {
 
               <div className="grid grid-cols-2 gap-3">
                 <Field id="dateOfBirth" label="Date de naissance" error={errors.dateOfBirth}>
-                  <Input
+                  <DatePicker
                     id="dateOfBirth"
                     name="dateOfBirth"
-                    type="date"
                     disabled={disabled}
-                    autoComplete="bday"
                     aria-invalid={!!errors.dateOfBirth}
                   />
                 </Field>

@@ -13,6 +13,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { DatePicker } from '@/components/ui/date-picker'
 import { Label } from '@/components/ui/label'
 import { PasswordInput } from '@/components/PasswordInput'
 
@@ -314,8 +315,8 @@ export default function MemberInscription() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <Field id="dateOfBirth" label="Date de naissance" required error={errors.dateOfBirth}>
-                <Input id="dateOfBirth" name="dateOfBirth" type="date" disabled={isPending}
-                  autoComplete="bday" aria-invalid={!!errors.dateOfBirth} />
+                <DatePicker id="dateOfBirth" name="dateOfBirth" required disabled={isPending}
+                  aria-invalid={!!errors.dateOfBirth} />
               </Field>
               <Field id="sexe" label="Sexe" required error={errors.sexe}>
                 <select id="sexe" name="sexe" disabled={isPending}

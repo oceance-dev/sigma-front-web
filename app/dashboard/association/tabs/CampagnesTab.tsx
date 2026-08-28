@@ -23,6 +23,7 @@ import { useActionState } from 'react'
 import type { ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { DatePicker } from '@/components/ui/date-picker'
 import { Label } from '@/components/ui/label'
 import { apiFetch } from '@/src/lib/api-client'
 import { formatDateShort as fmtDate } from '@/src/lib/date-utils'
@@ -148,11 +149,11 @@ function CampaignFormModal({ title, initial, onClose, onSaved }: {
               <div className="grid grid-cols-2 gap-3">
                 <div className="grid gap-1.5">
                   <Label htmlFor="camp-camp-start">Ouverture</Label>
-                  <Input id="camp-camp-start" name="campaignStartsAt" type="date" defaultValue={toInputDate(initial?.campaignStartsAt)} disabled={isPending} />
+                  <DatePicker id="camp-camp-start" name="campaignStartsAt" defaultValue={toInputDate(initial?.campaignStartsAt)} disabled={isPending} />
                 </div>
                 <div className="grid gap-1.5">
                   <Label htmlFor="camp-camp-end">Fin</Label>
-                  <Input id="camp-camp-end" name="campaignEndsAt" type="date" defaultValue={toInputDate(initial?.campaignEndsAt)} disabled={isPending} />
+                  <DatePicker id="camp-camp-end" name="campaignEndsAt" defaultValue={toInputDate(initial?.campaignEndsAt)} disabled={isPending} />
                 </div>
               </div>
             </fieldset>
@@ -161,11 +162,11 @@ function CampaignFormModal({ title, initial, onClose, onSaved }: {
               <div className="grid grid-cols-2 gap-3">
                 <div className="grid gap-1.5">
                   <Label htmlFor="camp-start">Ouverture</Label>
-                  <Input id="camp-start" name="startsAt" type="date" defaultValue={toInputDate(initial?.startsAt)} disabled={isPending} />
+                  <DatePicker id="camp-start" name="startsAt" defaultValue={toInputDate(initial?.startsAt)} disabled={isPending} />
                 </div>
                 <div className="grid gap-1.5">
                   <Label htmlFor="camp-end">Clôture</Label>
-                  <Input id="camp-end" name="endsAt" type="date" defaultValue={toInputDate(initial?.endsAt)} disabled={isPending} />
+                  <DatePicker id="camp-end" name="endsAt" defaultValue={toInputDate(initial?.endsAt)} disabled={isPending} />
                 </div>
               </div>
             </fieldset>
