@@ -73,6 +73,11 @@ function fmtSize(bytes: number) {
   return bytes >= 1_000_000 ? `${(bytes / 1_000_000).toFixed(0)} Mo` : `${(bytes / 1_000).toFixed(0)} Ko`
 }
 
+function getExtension(filename: string) {
+  const idx = filename.lastIndexOf('.')
+  return idx === -1 ? '' : filename.slice(idx + 1).toLowerCase()
+}
+
 // ── Page ───────────────────────────────────────────────────
 
 export default function CandidatDocumentsPage() {
@@ -129,6 +134,11 @@ export default function CandidatDocumentsPage() {
   // ── Upload ─────────────────────────────────────────────────
 
   async function handleUpload(req: Requirement, file: File) {
+    const ext = getExtension(file.name)
+    if (!req.allowedExtensions.includes(ext)) {
+      setFeedback({ message: `Format .${ext || '?'} non supporté. Formats acceptés : ${req.allowedExtensions.join(', ').toUpperCase()}.`, type: 'error' })
+      return
+    }
     if (file.size > req.maxFileSize) {
       setFeedback({ message: `Fichier trop volumineux (max ${fmtSize(req.maxFileSize)}).`, type: 'error' })
       return
@@ -164,6 +174,11 @@ export default function CandidatDocumentsPage() {
 
   async function handleReplace(req: Requirement, file: File) {
     if (!req.status.documentId) return
+    const ext = getExtension(file.name)
+    if (!req.allowedExtensions.includes(ext)) {
+      setFeedback({ message: `Format .${ext || '?'} non supporté. Formats acceptés : ${req.allowedExtensions.join(', ').toUpperCase()}.`, type: 'error' })
+      return
+    }
     if (file.size > req.maxFileSize) {
       setFeedback({ message: `Fichier trop volumineux (max ${fmtSize(req.maxFileSize)}).`, type: 'error' })
       return

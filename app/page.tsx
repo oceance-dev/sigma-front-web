@@ -286,7 +286,7 @@ export default async function HomePage() {
           </p>
           <div className="grid gap-3 sm:grid-cols-3 mb-8 text-left max-w-xl mx-auto">
             {[
-              { n: '30', unit: 'jours',     label: "d'essai complet"       },
+              { n: '14', unit: 'jours',     label: "d'essai complet"       },
               { n: '0',  unit: '€',         label: 'de carte bancaire'      },
               { n: '1h', unit: '',           label: 'pour être opérationnel' },
             ].map((s) => (
@@ -347,6 +347,7 @@ export default async function HomePage() {
                 {[
                   'Membres & gestion des candidatures',
                   'Gestion documentaire complète',
+                  '500 Go de stockage inclus',
                   'Filigrane automatique',
                   'Rôles & permissions',
                   'App mobile iOS & Android',
@@ -377,6 +378,7 @@ export default async function HomePage() {
               <ul className="mt-6 flex flex-col gap-2 flex-1">
                 {[
                   'Tout le plan Mensuel inclus',
+                  '500 Go de stockage inclus',
                   '2 mois offerts (10 payés, 12 utilisés)',
                   'Onboarding personnalisé offert',
                   'Priorité sur les nouvelles fonctionnalités',
@@ -401,23 +403,41 @@ export default async function HomePage() {
             <div className="grid gap-4 sm:grid-cols-2 max-w-2xl mx-auto">
               {[
                 {
+                  title: 'Stockage supplémentaire',
+                  desc: 'Besoin de plus d\'espace pour vos documents ? Ajoutez du stockage additionnel à votre offre.',
+                  tiers: ['500 Go : 130 € /an', '1 To : 260 € /an'],
+                  soon: false,
+                },
+                {
                   title: 'Gestion des stocks avec IA',
                   desc: 'Inventaire du matériel, alertes de stock bas, suggestions de réapprovisionnement par IA.',
                   price: '10 € /mois ou 120 € /an',
+                  soon: true,
                 },
                 {
                   title: 'Gestion des absences',
                   desc: 'Feuilles d\'émargement numériques, suivi des absences, alertes automatiques, exports bureau.',
                   price: '5 € /mois ou 60 € /an',
+                  soon: true,
                 },
               ].map((m) => (
                 <div key={m.title} className="rounded-xl border border-border bg-card p-5">
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <p className="font-medium text-sm">{m.title}</p>
-                    <span className="shrink-0 rounded px-2 py-0.5 text-xs bg-muted text-muted-foreground">Bientôt</span>
+                    {m.soon && (
+                      <span className="shrink-0 rounded px-2 py-0.5 text-xs bg-muted text-muted-foreground">Bientôt</span>
+                    )}
                   </div>
                   <p className="text-xs text-muted-foreground mb-3">{m.desc}</p>
-                  <p className="text-xs font-medium text-primary">{m.price}</p>
+                  {m.tiers ? (
+                    <div className="flex flex-col gap-0.5">
+                      {m.tiers.map((t) => (
+                        <p key={t} className="text-xs font-medium text-primary">{t}</p>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs font-medium text-primary">{m.price}</p>
+                  )}
                 </div>
               ))}
             </div>
