@@ -1,88 +1,78 @@
-name: 🚀 Deploy
+name: Deploy
+
+# Modèle "pull" : GitHub Actions se contente de tester, construire l'image et
+# la pousser sur GHCR. Il ne se connecte JAMAIS au VPS.
+# Le VPS détecte la nouvelle image via un timer systemd (sigma-front-deploy.timer)
+# et applique lui-même (scripts/deploy-watch.sh -> scripts/deploy.sh).
+# => aucun port entrant exposé sur le serveur qui héberge les données.
 
 on:
   push:
     branches: [main]
-  workflow_dispatch:
+
+concurrency:
+  group: build-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
 
 jobs:
-  # ── Job 1 : Build et push de l'image Docker ──────────────────
-  build:
-    name: Build & Push image
+  # ----------------------------------------------------------------
+  # 1. Qualité : lint + types + build (garde-fou avant l'image)
+  # ----------------------------------------------------------------
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint          # informatif : ne bloque pas le déploiement
+        continue-on-error: true
+      - run: npm run typecheck     # bloquant : vraies erreurs de types
+      - run: npm run build         # bloquant : la compilation Next.js doit passer
+        env:
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+
+  # ----------------------------------------------------------------
+  # 2. Build de l'image Docker + push sur GHCR (privé)
+  # ----------------------------------------------------------------
+  build-and-push:
+    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
+      - uses: actions/checkout@v5
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push
-        uses: docker/build-push-action@v6
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/oceance-dev/sigma-web
+          tags: |
+            type=raw,value=latest
+            type=sha,format=long
+      - uses: docker/build-push-action@v6
         with:
           context: .
-          dockerfile: Dockerfile
           push: true
-          tags: |
-            ghcr.io/${{ github.repository }}:latest
-            ghcr.io/${{ github.repository }}:${{ github.sha }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
+            NEXT_PUBLIC_API_HOST=${{ secrets.NEXT_PUBLIC_API_HOST }}
             NEXT_PUBLIC_SENTRY_DSN=${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
             SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # ── Job 2 : Déploiement sur le VPS ───────────────────────────
-  deploy:
-    name: Deploy to VPS
-    needs: build
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1
-        env:
-          GHCR_IMAGE: ghcr.io/${{ github.repository }}:latest
-          ACTOR: ${{ github.actor }}
-          GHCR_PAT: ${{ secrets.GHCR_PAT }}
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          port: ${{ secrets.VPS_PORT }}
-          envs: GHCR_IMAGE,ACTOR,GHCR_PAT
-          script: |
-            set -e
-
-            # 1. Authentification GHCR
-            echo "$GHCR_PAT" | docker login ghcr.io -u "$ACTOR" --password-stdin
-
-            # 2. Pull de la nouvelle image depuis GHCR
-            docker pull "$GHCR_IMAGE"
-
-            # 3. Retag en sigma-web:latest (nom attendu par docker-compose.yml)
-            docker tag "$GHCR_IMAGE" sigma-web:latest
-
-            # 4. Mise à jour des fichiers de config (docker-compose.yml, nginx.conf)
-            cd /opt/sigma-web
-            git pull origin main
-
-            # 5. Redémarrage du conteneur avec la nouvelle image
-            docker compose up -d
-
-            # 6. Nettoyage des anciennes images
-            docker image prune -f
-
-            echo "✅ Déploiement terminé — $GHCR_IMAGE"
+  # Pas de job "deploy" : le VPS tire l'image lui-même (voir docs/DEPLOY.md).

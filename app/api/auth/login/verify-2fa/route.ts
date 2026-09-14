@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
 
   let res: Response
   try {
-    res = await fetch(`${API_URL}/auth/login`, {
+    res = await fetch(`${API_URL}/auth/login/verify-2fa`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...clientIpHeaders(req) },
       body: JSON.stringify(body),
@@ -20,12 +20,6 @@ export async function POST(req: NextRequest) {
 
   if (!res.ok) {
     return NextResponse.json(json, { status: res.status })
-  }
-
-  // Admin / super admin : le mot de passe est validé mais aucun token n'est
-  // émis tant que le code 2FA n'est pas confirmé (voir /auth/login/verify-2fa).
-  if (json.twoFactorRequired) {
-    return NextResponse.json(json)
   }
 
   return buildSessionResponse(json.data)

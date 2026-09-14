@@ -1,0 +1,43 @@
+# ============================================================
+# Déploiement PRODUCTION — à copier / suivre sur le VPS dans ~/sigma-front-web/
+#
+# NE PAS utiliser en local (local : `npm run dev`).
+#
+# L'image est construite et publiée par GitHub Actions
+# (.github/workflows/deploy.yml) sur ghcr.io. Le VPS ne fait que :
+#   docker compose -f docker-compose.prod.yml pull
+#   docker compose -f docker-compose.prod.yml up -d
+# ============================================================
+name: sigma-front-web
+
+services:
+  web:
+    image: ghcr.io/oceance-dev/sigma-web:${IMAGE_TAG:-latest}
+    container_name: sigma_front
+    restart: unless-stopped
+    init: true
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      HOSTNAME: 0.0.0.0
+      # API_URL : injectée au runtime (voir .env sur le VPS), modifiable sans rebuild.
+      API_URL: ${API_URL}
+    expose:
+      - "3000"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.sigma-front.rule=Host(`sigma-saas.cloud`)"
+      - "traefik.http.routers.sigma-front.entrypoints=websecure"
+      - "traefik.http.routers.sigma-front.tls=true"
+      - "traefik.http.routers.sigma-front.tls.certresolver=letsencrypt"
+      - "traefik.http.services.sigma-front.loadbalancer.server.port=3000"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"

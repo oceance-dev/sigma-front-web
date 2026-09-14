@@ -14,17 +14,23 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { PasswordInput } from '@/components/PasswordInput'
+import { TwoFactorCodeForm } from '@/components/TwoFactorCodeForm'
 import { useAuth } from '@/src/context/auth-context'
 import { ROLE_KEYS } from '@/src/lib/role-keys'
 
 function LoginForm() {
-  const { login } = useAuth()
+  const { login, verifyLoginTwoFactor } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
   const [error, setError] = useState<string | null>(null)
   const [isPending, setIsPending] = useState(false)
+  const [challenge, setChallenge] = useState<{ challengeId: string } | null>(null)
 
   const resetSuccess = searchParams.get('reset') === '1'
+
+  function goToDashboard(role: string | undefined) {
+    router.push(role === ROLE_KEYS.CANDIDAT ? '/candidat/documents' : '/dashboard')
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -40,10 +46,55 @@ function LoginForm() {
     if (result.error) {
       setError(result.error)
       setIsPending(false)
+    } else if (result.twoFactorRequired) {
+      setIsPending(false)
+      setChallenge({ challengeId: result.challengeId! })
     } else {
-      const role = result.user?.associationRoleKey
-      router.push(role === ROLE_KEYS.CANDIDAT ? '/candidat/documents' : '/dashboard')
+      goToDashboard(result.user?.associationRoleKey)
     }
+  }
+
+  async function handleVerifyCode(code: string) {
+    setIsPending(true)
+    setError(null)
+    const result = await verifyLoginTwoFactor(challenge!.challengeId, code)
+    if (result.error) {
+      setError(result.error)
+      setIsPending(false)
+    } else {
+      goToDashboard(result.user?.associationRoleKey)
+    }
+  }
+
+  if (challenge) {
+    return (
+      <Card className="w-full max-w-sm">
+        <CardHeader>
+          <CardTitle>Vérification en deux étapes</CardTitle>
+          <CardDescription>
+            Un code de vérification vous a été envoyé par email.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <TwoFactorCodeForm
+            description="Entrez le code à 6 chiffres reçu par email pour terminer la connexion."
+            error={error}
+            isPending={isPending}
+            submitLabel="Se connecter"
+            onSubmit={handleVerifyCode}
+            footer={
+              <button
+                type="button"
+                onClick={() => { setChallenge(null); setError(null) }}
+                className="self-center text-sm text-muted-foreground hover:text-foreground underline-offset-4 hover:underline"
+              >
+                Revenir à la connexion
+              </button>
+            }
+          />
+        </CardContent>
+      </Card>
+    )
   }
 
   return (

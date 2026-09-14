@@ -35,3 +35,8 @@ export interface AuthSession {
 export interface LoginApiResponse {
   data: AuthSession;
 }
+
+export interface TwoFactorChallenge {
+  challengeId: string;
+  expiresAt: string;
+}

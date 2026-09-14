@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { tokenStore } from '@/src/lib/token-store'
+import { stepUpStore } from '@/src/lib/step-up-store'
 import { primeRefresh } from '@/src/lib/api-client'
 import type { AuthAssociation, AuthUser } from '@/src/types/auth'
 
@@ -15,8 +16,17 @@ interface AuthState {
   isAuthenticated: boolean
 }
 
+interface LoginResult {
+  error?: string
+  user?: AuthUser
+  twoFactorRequired?: true
+  challengeId?: string
+  expiresAt?: string
+}
+
 interface AuthContextValue extends AuthState {
-  login: (email: string, password: string) => Promise<{ error?: string; user?: AuthUser }>
+  login: (email: string, password: string) => Promise<LoginResult>
+  verifyLoginTwoFactor: (challengeId: string, code: string) => Promise<{ error?: string; user?: AuthUser }>
   logout: () => Promise<void>
   hasPermission: (permission: string) => boolean
 }
@@ -47,6 +57,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         headers: { Authorization: `Bearer ${tokenStore.get() ?? ''}` },
       }).catch(() => {})
       tokenStore.clear()
+      stepUpStore.clear()
       setState({ user: null, association: null, isLoading: false, isAuthenticated: false })
       window.location.replace('/login')
     }, INACTIVITY_MS)
@@ -142,7 +153,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => document.removeEventListener('visibilitychange', handleVisibility)
   }, [state.isAuthenticated])
 
-  const login = useCallback(async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string): Promise<LoginResult> => {
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
@@ -150,14 +161,53 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({ email, password }),
       })
 
+      const body = await res.json().catch(() => ({}))
+
       if (!res.ok) {
-        const body = await res.json().catch(() => ({}))
         const messages: Record<string, string> = {
           ACCOUNT_INACTIVE: 'Votre compte est inactif.',
           ACCOUNT_LOCKED: 'Compte verrouillé — réessayez dans 15 min.',
           ASSOCIATION_INACTIVE: "L'association est inactive.",
         }
         return { error: messages[body?.code] ?? 'Identifiants invalides.' }
+      }
+
+      if (body.twoFactorRequired) {
+        return {
+          twoFactorRequired: true,
+          challengeId: body.data.challengeId,
+          expiresAt: body.data.expiresAt,
+        }
+      }
+
+      const { data } = body
+      tokenStore.set(data.accessToken)
+      setState({
+        user: data.user,
+        association: data.association,
+        isLoading: false,
+        isAuthenticated: true,
+      })
+      return { user: data.user as AuthUser }
+    } catch {
+      return { error: 'Impossible de joindre le serveur. Vérifiez votre connexion.' }
+    }
+  }, [])
+
+  const verifyLoginTwoFactor = useCallback(async (challengeId: string, code: string) => {
+    try {
+      const res = await fetch('/api/auth/login/verify-2fa', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ challengeId, code }),
+      })
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        const messages: Record<string, string> = {
+          TWO_FACTOR_INVALID: 'Code invalide ou expiré. Réessayez ou reconnectez-vous.',
+        }
+        return { error: messages[body?.error] ?? 'Code invalide ou expiré. Réessayez ou reconnectez-vous.' }
       }
 
       const { data } = await res.json()
@@ -181,6 +231,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }).catch(() => {})
 
     tokenStore.clear()
+    stepUpStore.clear()
     setState({ user: null, association: null, isLoading: false, isAuthenticated: false })
   }, [])
 
@@ -193,7 +244,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   )
 
   return (
-    <AuthContext.Provider value={{ ...state, login, logout, hasPermission }}>
+    <AuthContext.Provider value={{ ...state, login, verifyLoginTwoFactor, logout, hasPermission }}>
       {children}
     </AuthContext.Provider>
   )

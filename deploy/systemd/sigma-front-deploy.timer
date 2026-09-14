@@ -1,0 +1,10 @@
+[Unit]
+Description=Vérifie toutes les 2 minutes si une nouvelle version SIGMA FRONT est à déployer
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=2min
+AccuracySec=20s
+
+[Install]
+WantedBy=timers.target

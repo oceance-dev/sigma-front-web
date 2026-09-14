@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { AuthProvider } from "@/src/context/auth-context";
+import { StepUpProvider } from "@/src/context/step-up-context";
 import { PwaRegister } from "@/components/pwa-register";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
@@ -59,7 +60,9 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <ErrorBoundary>
-          <AuthProvider>{children}</AuthProvider>
+          <AuthProvider>
+            <StepUpProvider>{children}</StepUpProvider>
+          </AuthProvider>
         </ErrorBoundary>
         <PwaRegister />
       </body>

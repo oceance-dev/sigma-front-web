@@ -1,6 +1,7 @@
 'use client'
 
 import { apiFetch } from '@/src/lib/api-client'
+import { useStepUp } from '@/src/context/step-up-context'
 import { useEffect, useState, useTransition } from 'react'
 import { Building2, Check, CheckCircle2, Clock, Loader2, RefreshCw, Users, X, XCircle } from 'lucide-react'
 import type { Association } from '@/src/types/association'
@@ -45,9 +46,11 @@ export default function SuperAdminPage() {
     })
   }, [tick])
 
+  const { sensitiveFetch } = useStepUp()
+
   function approve(id: string) {
     startTransition(async () => {
-      const res = await apiFetch(`/super-admin/associations/${id}/approve`, { method: 'POST' })
+      const res = await sensitiveFetch(`/super-admin/associations/${id}/approve`, { method: 'POST' })
       if (res.ok) setPendingAssoc(prev => prev.filter(a => a.id !== id))
     })
   }
@@ -55,7 +58,7 @@ export default function SuperAdminPage() {
   function reject(id: string) {
     if (!confirm('Rejeter cette association ?')) return
     startTransition(async () => {
-      const res = await apiFetch(`/super-admin/associations/${id}/reject`, { method: 'POST' })
+      const res = await sensitiveFetch(`/super-admin/associations/${id}/reject`, { method: 'POST' })
       if (res.ok) setPendingAssoc(prev => prev.filter(a => a.id !== id))
     })
   }

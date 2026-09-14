@@ -17,7 +17,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import type { Association } from '@/src/types/association'
 import { StatCard } from '@/components/StatCard'
-import { apiFetch } from '@/src/lib/api-client'
+import { useStepUp } from '@/src/context/step-up-context'
 import { InfoField } from './_shared'
 
 // ── EditModal ──────────────────────────────────────────────
@@ -33,6 +33,8 @@ function EditModal({
   onClose: () => void
   onSaved: () => void
 }) {
+  const { sensitiveFetch } = useStepUp()
+
   const [state, action, isPending] = useActionState(
     async (_prev: EditState, formData: FormData): Promise<EditState> => {
       const body = {
@@ -42,7 +44,7 @@ function EditModal({
         postalCode: (formData.get('postalCode') as string).trim(),
         country:    (formData.get('country') as string).trim(),
       }
-      const res = await apiFetch(`/admin/association/${association.id}/update`, {
+      const res = await sensitiveFetch(`/admin/association/${association.id}/update`, {
         method: 'PUT',
         body: JSON.stringify(body),
       })

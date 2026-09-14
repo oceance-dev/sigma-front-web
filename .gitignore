@@ -43,6 +43,7 @@ next-env.d.ts
 # docs internes
 *.md
 ANALYSE-REFACTORING.md
+!docs/DEPLOY.md
 
 # Sentry Config File
 .env.sentry-build-plugin

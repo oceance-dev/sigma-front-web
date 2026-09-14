@@ -1,0 +1,10 @@
+[Unit]
+Description=Déploiement SIGMA FRONT — détecte une nouvelle image/commit et applique
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+User=sigma
+ExecStart=/home/sigma/sigma-front-web/scripts/deploy-watch.sh
+Nice=10
