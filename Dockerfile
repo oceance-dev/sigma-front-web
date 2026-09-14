@@ -14,12 +14,15 @@ RUN npm ci
 # Copy source code
 COPY . .
 
-# Build args baked dans le bundle client au moment du build
-ARG NEXT_PUBLIC_API_URL
+# Build args : `next.config.ts` (headers(), CSP) est résolu au build comme
+# rewrites() l'était — NEXT_PUBLIC_API_HOST doit donc être un build-arg, pas
+# une var runtime. L'URL de l'API elle-même n'en a plus besoin, voir
+# app/api/sigma/[...path]/route.ts qui lit API_URL au runtime.
+ARG NEXT_PUBLIC_API_HOST
 ARG NEXT_PUBLIC_SENTRY_DSN
 ARG SENTRY_AUTH_TOKEN
 
-ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_HOST=$NEXT_PUBLIC_API_HOST
 ENV NEXT_PUBLIC_SENTRY_DSN=$NEXT_PUBLIC_SENTRY_DSN
 ENV SENTRY_AUTH_TOKEN=$SENTRY_AUTH_TOKEN
 ENV NEXT_TELEMETRY_DISABLED=1

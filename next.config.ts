@@ -25,17 +25,6 @@ const nextConfig: NextConfig = {
     "172.30.*.*",
     "172.31.*.*",
   ],
-  async rewrites() {
-    // API_URL est une var runtime (non-NEXT_PUBLIC_) : modifiable sans rebuild.
-    // Fallback sur NEXT_PUBLIC_API_URL pour la compatibilité dev local.
-    const apiBase = process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? ''
-    return [
-      {
-        source: '/api/sigma/:path*',
-        destination: `${apiBase}/:path*`,
-      },
-    ]
-  },
   async headers() {
     // NEXT_PUBLIC_API_HOST = domaine public (ex: https://sigma-saas.cloud)
     // utilisé uniquement pour le CSP côté browser.

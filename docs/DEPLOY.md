@@ -124,22 +124,27 @@ tail -n 30 ~/sigma-front-web/logs/deploy.log
 
 ## 2. Secrets & variables GitHub
 
-Contrairement au backend, ce build embarque des variables `NEXT_PUBLIC_*`
-dans le bundle client (baked à l'image, pas relues au runtime). `NEXT_PUBLIC_API_URL`
-et `NEXT_PUBLIC_SENTRY_DSN` sont déjà configurés en GitHub Secrets sur ce repo
-(hérités de l'ancien workflow) — le nouveau workflow les réutilise tels quels,
-pas de migration vers des Variables nécessaire.
+`API_URL` (connexion au backend) n'est **plus** un besoin de build : le proxy
+`/api/sigma/*` est un Route Handler (`app/api/sigma/[...path]/route.ts`) qui
+relit `API_URL` à chaque requête depuis le `.env` du VPS (§1.1), exactement
+comme côté backend — aucun secret GitHub requis pour ça, et rien à
+resynchroniser si `API_URL` change un jour.
+
+Restent deux `NEXT_PUBLIC_*` réellement bakées dans le bundle au build (Sentry
++ le CSP, tous deux résolus par Next.js au moment du build, pas au runtime) :
 
 **Settings → Secrets and variables → Actions → Secrets** (sur le repo
 `oceance-dev/sigma-front-web`) — vérifier/compléter :
-- `NEXT_PUBLIC_API_URL` = `http://sigma_api:3333/sigma-adonisjs/v1` (déjà présent —
-  oui, un nom de conteneur Docker interne dans une variable `NEXT_PUBLIC_*` : seul
-  son `.pathname` est lu côté navigateur, voir `app/dashboard/document/page.tsx:386`.
-  Ne pas "corriger" vers une URL publique sans vérifier ce call site.)
-- `NEXT_PUBLIC_SENTRY_DSN` (déjà présent)
-- `NEXT_PUBLIC_API_HOST` = `https://sigma-saas.cloud` (nouveau — utilisé pour le CSP,
-  voir `next.config.ts`)
-- `SENTRY_AUTH_TOKEN` (si l'upload de sourcemaps Sentry est utilisé en CI)
+- `NEXT_PUBLIC_API_HOST` = `https://sigma-saas.cloud` (CSP `connect-src`,
+  voir `next.config.ts` `headers()` — sans ça le header est juste incomplet,
+  pas bloquant puisque tous les appels API passent en same-origin par `/api/sigma/*`)
+- `NEXT_PUBLIC_SENTRY_DSN` (déjà présent, optionnel)
+- `SENTRY_AUTH_TOKEN` (déjà présent, optionnel — upload de sourcemaps)
+
+`NEXT_PUBLIC_API_URL` n'existe plus dans le code (supprimé de `next.config.ts`,
+`Dockerfile` et `app/dashboard/document/page.tsx` — remplacé par la constante
+`API_BASE_PATH` dans `src/lib/api-config.ts`) : le secret GitHub du même nom,
+s'il traîne encore dans les settings du repo, peut être supprimé sans risque.
 
 Aucun secret SSH : comme côté backend, le push sur GHCR utilise le
 `GITHUB_TOKEN` natif du workflow, GitHub ne se connecte jamais au VPS.

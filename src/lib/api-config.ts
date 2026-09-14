@@ -1,6 +1,13 @@
 // API_URL : var runtime (non-NEXT_PUBLIC_), modifiable sans rebuild.
 // Fallback sur NEXT_PUBLIC_API_URL pour la compatibilité dev local.
+// Server-only : ne pas importer ce module depuis un composant client.
 export const API_URL = (process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL)!
+
+// Chemin de base des routes backend (Traefik Host+PathPrefix `/sigma-adonisjs`,
+// AdonisJS routes.ts groupe `.prefix('/sigma-adonisjs/v1')`). Constante fixe
+// (pas de var d'env) car son seul usage côté client est de retirer ce préfixe
+// d'une URL renvoyée par le backend — voir app/dashboard/document/page.tsx.
+export const API_BASE_PATH = '/sigma-adonisjs/v1'
 
 import type { NextRequest } from 'next/server'
 

@@ -1,6 +1,7 @@
 'use client'
 
 import { apiFetch } from '@/src/lib/api-client'
+import { API_BASE_PATH } from '@/src/lib/api-config'
 import { useAuth } from '@/src/context/auth-context'
 import {
   useActionState,
@@ -383,8 +384,7 @@ async function downloadDocument(id: string) {
   const tokenRes = await apiFetch(`/documents/users/download-url/${id}`)
   if (!tokenRes.ok) return
   const { data } = await tokenRes.json()
-  const basePath = new URL(process.env.NEXT_PUBLIC_API_URL!).pathname
-  const relativePath = data.url.startsWith(basePath) ? data.url.slice(basePath.length) : data.url
+  const relativePath = data.url.startsWith(API_BASE_PATH) ? data.url.slice(API_BASE_PATH.length) : data.url
   const fullUrl = `/api/sigma${relativePath}`
   const dlRes = await apiFetch(fullUrl)
   if (dlRes.headers.get('Content-Type')?.includes('application/json')) {
