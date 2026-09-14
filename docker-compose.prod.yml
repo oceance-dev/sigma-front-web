@@ -12,7 +12,7 @@ name: sigma-front-web
 
 services:
   web:
-    image: ghcr.io/oceance-dev/sigma-web:${IMAGE_TAG:-latest}
+    image: ghcr.io/oceance-dev/sigma-front-web:${IMAGE_TAG:-latest}
     container_name: sigma_front
     restart: unless-stopped
     init: true

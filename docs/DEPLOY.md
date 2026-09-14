@@ -1,4 +1,4 @@
-# Déploiement automatique — SIGMA FRONT (sigma-web)
+# Déploiement automatique — SIGMA FRONT (sigma-front-web)
 
 Modèle **pull**, identique à celui du backend (`ancre-adonisjs`), qui tourne sur
 le même VPS : GitHub Actions teste, construit l'image Docker et la publie sur
@@ -14,7 +14,7 @@ via un timer systemd et l'applique lui-même.
 git push main
    └▶ GitHub Actions
         ├ test : lint (informatif) + typecheck + build Next.js
-        └ build-and-push : docker build ─▶ ghcr.io/oceance-dev/sigma-web:{latest,sha-…}
+        └ build-and-push : docker build ─▶ ghcr.io/oceance-dev/sigma-front-web:{latest,sha-…}
 
 VPS ─ sigma-front-deploy.timer (toutes les ~2 min) ─▶ scripts/deploy-watch.sh
         ├ nouveau commit origin/main ?  ou  nouveau digest d'image ?
@@ -34,7 +34,7 @@ partout pour éviter toute collision : unités systemd `sigma-front-deploy.*`
 `~/ancre-adonisjs`), logs dans `~/sigma-front-web/logs/deploy.log` (backend :
 `~/backups/logs/deploy.log`), conteneur `sigma_front` (backend : `sigma_api`),
 routeur Traefik `sigma-front` (backend : `sigma-api`), image
-`ghcr.io/oceance-dev/sigma-web`.
+`ghcr.io/oceance-dev/sigma-front-web`.
 
 ---
 
@@ -44,20 +44,22 @@ routeur Traefik `sigma-front` (backend : `sigma-api`), image
 
 Le VPS garde un clone du repo (pour `docker-compose.prod.yml` + `scripts/`).
 La deploy key du backend (`repo_deploy_key`) est scoped à `ancre-adonisjs` sur
-GitHub — **elle ne donne pas accès à `sigma-web`**. Il en faut une nouvelle,
+GitHub — **elle ne donne pas accès à `sigma-front-web`**. Il en faut une nouvelle,
 en lecture seule, dédiée à ce repo :
 
 ```bash
 # sur le VPS, en tant que sigma
-ssh-keygen -t ed25519 -f ~/.ssh/sigma_front_deploy_key -N "" -C "vps-sigma-web-ro"
+ssh-keygen -t ed25519 -f ~/.ssh/sigma_front_deploy_key -N "" -C "vps-sigma-front-web-ro"
 cat ~/.ssh/sigma_front_deploy_key.pub
 ```
 
-GitHub → repo `oceance-dev/sigma-web` → **Settings → Deploy keys → Add** :
-coller la clé publique, **"Allow write access" décoché**.
+GitHub → repo `oceance-dev/sigma-front-web` → **Settings → Deploy keys → Add** :
+coller la clé publique (le `cat` ci-dessus), **"Allow write access" décoché**.
+La clé privée ne quitte jamais le VPS.
 
 ```bash
-# config SSH dédiée à ce dépôt (alias distinct de github-ancre)
+# toujours sur le VPS, en tant que sigma — config SSH dédiée à ce dépôt
+# (alias distinct de github-ancre)
 touch ~/.ssh/config && chmod 600 ~/.ssh/config
 printf '%s\n' \
   'Host github-sigma-front' \
@@ -67,9 +69,9 @@ printf '%s\n' \
   '  IdentitiesOnly yes' \
   >> ~/.ssh/config
 
-git clone github-sigma-front:oceance-dev/sigma-web.git ~/sigma-front-web
+git clone github-sigma-front:oceance-dev/sigma-front-web.git ~/sigma-front-web
 cd ~/sigma-front-web
-ssh -T github-sigma-front    # "Hi oceance-dev/sigma-web! ..." attendu
+ssh -T github-sigma-front    # "Hi oceance-dev/sigma-front-web! ..." attendu
 ```
 
 ### 0.2 Login GHCR — déjà fait, à vérifier seulement
@@ -79,11 +81,11 @@ le backend). Le même login couvre ce repo tant que le PAT porte sur le compte
 `oceance-dev` entier :
 
 ```bash
-docker pull ghcr.io/oceance-dev/sigma-web:latest && echo OK
+docker pull ghcr.io/oceance-dev/sigma-front-web:latest && echo OK
 ```
 
 Si ça échoue avec `unauthorized` (PAT scopé à un seul repo/package), refaire
-un `docker login ghcr.io` avec un PAT couvrant aussi `sigma-web` — ne pas
+un `docker login ghcr.io` avec un PAT couvrant aussi `sigma-front-web` — ne pas
 créer un second login sans raison, `~/.docker/config.json` est déjà partagé.
 
 ---
@@ -126,7 +128,7 @@ et `NEXT_PUBLIC_SENTRY_DSN` sont déjà configurés en GitHub Secrets sur ce rep
 pas de migration vers des Variables nécessaire.
 
 **Settings → Secrets and variables → Actions → Secrets** (sur le repo
-`oceance-dev/sigma-web`) — vérifier/compléter :
+`oceance-dev/sigma-front-web`) — vérifier/compléter :
 - `NEXT_PUBLIC_API_URL` = `https://sigma-saas.cloud/sigma-adonisjs` (déjà présent)
 - `NEXT_PUBLIC_SENTRY_DSN` (déjà présent)
 - `NEXT_PUBLIC_API_HOST` = `https://sigma-saas.cloud` (nouveau — utilisé pour le CSP,
@@ -157,7 +159,7 @@ cd ~/sigma-front-web
 git fetch origin && git reset --hard origin/main    # récupère docker-compose.prod.yml + scripts
 
 # l'image doit déjà être sur GHCR (job build-and-push ✅). Vérifier :
-docker pull ghcr.io/oceance-dev/sigma-web:latest
+docker pull ghcr.io/oceance-dev/sigma-front-web:latest
 
 # vérifier qu'aucun conteneur nommé "sigma-web" (ancien déploiement local-build)
 # ou "sigma_front" ne tourne déjà et n'entre en collision de port/nom :

@@ -13,7 +13,7 @@ set -euo pipefail
 
 REPO_DIR="/home/sigma/sigma-front-web"
 COMPOSE_FILE="docker-compose.prod.yml"
-IMAGE="ghcr.io/oceance-dev/sigma-web:latest"
+IMAGE="ghcr.io/oceance-dev/sigma-front-web:latest"
 LOG_DIR="/home/sigma/sigma-front-web/logs"
 LOG="$LOG_DIR/deploy.log"
 

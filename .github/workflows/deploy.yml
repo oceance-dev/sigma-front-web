@@ -57,7 +57,7 @@ jobs:
       - id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/oceance-dev/sigma-web
+          images: ghcr.io/oceance-dev/sigma-front-web
           tags: |
             type=raw,value=latest
             type=sha,format=long
