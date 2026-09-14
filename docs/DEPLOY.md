@@ -97,12 +97,15 @@ créer un second login sans raison, `~/.docker/config.json` est déjà partagé.
 `/home/sigma/sigma-front-web/.env` (gitignoré, **jamais** committé) :
 
 ```env
-API_URL=https://sigma-saas.cloud/sigma-adonisjs
+API_URL=http://sigma_api:3333/sigma-adonisjs/v1
 ```
 
-C'est la seule variable requise au runtime (voir `.env.example` du repo) :
-`NEXT_PUBLIC_*` sont baked au build par GitHub Actions, pas relues au démarrage
-du conteneur.
+Valeur confirmée depuis l'`.env` actuellement en prod (pas une URL publique via
+Traefik) : le frontend joint le backend **directement par son nom de conteneur
+Docker**, d'où le réseau partagé `ancre-adonisjs_default` déclaré dans
+`docker-compose.prod.yml`. C'est la seule variable requise au runtime (voir
+`.env.example` du repo) : `NEXT_PUBLIC_*` sont baked au build par GitHub
+Actions, pas relues au démarrage du conteneur.
 
 ### 1.2 Timer de déploiement
 
@@ -129,7 +132,10 @@ pas de migration vers des Variables nécessaire.
 
 **Settings → Secrets and variables → Actions → Secrets** (sur le repo
 `oceance-dev/sigma-front-web`) — vérifier/compléter :
-- `NEXT_PUBLIC_API_URL` = `https://sigma-saas.cloud/sigma-adonisjs` (déjà présent)
+- `NEXT_PUBLIC_API_URL` = `http://sigma_api:3333/sigma-adonisjs/v1` (déjà présent —
+  oui, un nom de conteneur Docker interne dans une variable `NEXT_PUBLIC_*` : seul
+  son `.pathname` est lu côté navigateur, voir `app/dashboard/document/page.tsx:386`.
+  Ne pas "corriger" vers une URL publique sans vérifier ce call site.)
 - `NEXT_PUBLIC_SENTRY_DSN` (déjà présent)
 - `NEXT_PUBLIC_API_HOST` = `https://sigma-saas.cloud` (nouveau — utilisé pour le CSP,
   voir `next.config.ts`)
@@ -160,6 +166,10 @@ git fetch origin && git reset --hard origin/main    # récupère docker-compose.
 
 # l'image doit déjà être sur GHCR (job build-and-push ✅). Vérifier :
 docker pull ghcr.io/oceance-dev/sigma-front-web:latest
+
+# le réseau ancre-adonisjs_default est créé par le compose du backend (déjà en
+# prod) — vérifier qu'il existe avant de lancer, sinon "up -d" échoue :
+docker network ls | grep ancre-adonisjs_default
 
 # vérifier qu'aucun conteneur nommé "sigma-web" (ancien déploiement local-build)
 # ou "sigma_front" ne tourne déjà et n'entre en collision de port/nom :

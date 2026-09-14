@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { COOKIE_REFRESH } from '@/src/lib/auth-cookies'
 
 const PUBLIC_PATHS = [
+  '/api/health',
   '/login',
   '/forgot-password',
   '/reset-password',

@@ -36,8 +36,19 @@ services:
       - "traefik.http.routers.sigma-front.tls=true"
       - "traefik.http.routers.sigma-front.tls.certresolver=letsencrypt"
       - "traefik.http.services.sigma-front.loadbalancer.server.port=3000"
+      # Le réseau Traefik n'est PAS déclaré ici : Traefik route par labels via
+      # l'API Docker, peu importe le réseau du conteneur (network_mode: host).
+    networks:
+      # Requis pour joindre le backend par son nom de conteneur Docker
+      # (API_URL=http://sigma_api:3333/...) — réseau créé par le compose du
+      # backend (name: ancre-adonisjs -> réseau par défaut ancre-adonisjs_default).
+      - ancre-adonisjs_default
     logging:
       driver: json-file
       options:
         max-size: "10m"
         max-file: "5"
+
+networks:
+  ancre-adonisjs_default:
+    external: true
