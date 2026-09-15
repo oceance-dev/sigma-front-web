@@ -12,6 +12,8 @@ async function proxy(req: NextRequest, path: string[]) {
   if (auth) headers.set('Authorization', auth)
   const contentType = req.headers.get('Content-Type')
   if (contentType) headers.set('Content-Type', contentType)
+  const stepUpToken = req.headers.get('X-Step-Up-Token')
+  if (stepUpToken) headers.set('X-Step-Up-Token', stepUpToken)
 
   const hasBody = !['GET', 'HEAD'].includes(req.method)
 
