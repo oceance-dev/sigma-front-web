@@ -2,7 +2,6 @@
 
 import { apiFetch } from '@/src/lib/api-client'
 import { useAuth } from '@/src/context/auth-context'
-import { useStepUp } from '@/src/context/step-up-context'
 import { useActionState, useCallback, useEffect, useState } from 'react'
 import {
   Bell,
@@ -372,8 +371,6 @@ function AssociationForm({ associationId, onClose }: { associationId: string; on
 
   useEffect(() => { load() }, [load])
 
-  const { sensitiveFetch } = useStepUp()
-
   const [state, action, isPending] = useActionState(
     async (_prev: AssocState, formData: FormData): Promise<AssocState> => {
       const get = (k: string) => (formData.get(k) as string ?? '').trim()
@@ -388,7 +385,7 @@ function AssociationForm({ associationId, onClose }: { associationId: string; on
         rna:        get('rna') || null,
         siret:      get('siret') || null,
       }
-      const res = await sensitiveFetch(`/admin/association/${associationId}/update`, { method: 'PUT', body: JSON.stringify(body) })
+      const res = await apiFetch(`/admin/association/${associationId}/update`, { method: 'PUT', body: JSON.stringify(body) })
       if (!res.ok) { const j = await res.json(); return { error: j.message ?? 'Erreur.' } }
       return { success: 'Association mise à jour avec succès.' }
     },

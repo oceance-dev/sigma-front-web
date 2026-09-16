@@ -1,7 +1,6 @@
 'use client'
 
 import { apiFetch } from '@/src/lib/api-client'
-import { useStepUp } from '@/src/context/step-up-context'
 import { useEffect, useState, useTransition } from 'react'
 import { Building2, CheckCircle2, Loader2, X, XCircle, Clock, AlertCircle, Gift } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -177,13 +176,12 @@ function GrantAccessModal({ association, onClose, onSaved }: {
   const [months, setMonths] = useState(3)
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
-  const { sensitiveFetch } = useStepUp()
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
     startTransition(async () => {
-      const res = await sensitiveFetch(`/super-admin/associations/${association.id}/grant-access`, {
+      const res = await apiFetch(`/super-admin/associations/${association.id}/grant-access`, {
         method: 'PATCH',
         body: JSON.stringify({ months }),
       })

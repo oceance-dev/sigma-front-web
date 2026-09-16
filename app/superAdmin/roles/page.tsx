@@ -1,7 +1,6 @@
 'use client'
 
 import { apiFetch } from '@/src/lib/api-client'
-import { useStepUp } from '@/src/context/step-up-context'
 import { useEffect, useState, useTransition } from 'react'
 import { Loader2, Pencil, Plus, Shield, Trash2, Users, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -174,7 +173,6 @@ function RoleFormModal({ role, allPermissions, onClose, onSaved }: {
   )
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
-  const { sensitiveFetch } = useStepUp()
 
   const groups = Array.from(new Set(allPermissions.map(p => p.group))).sort()
 
@@ -196,7 +194,7 @@ function RoleFormModal({ role, allPermissions, onClose, onSaved }: {
     startTransition(async () => {
       if (isEdit) {
         const [updateRes, permsRes] = await Promise.allSettled([
-          sensitiveFetch(`/super-admin/roles/${role!.id}/update`, {
+          apiFetch(`/super-admin/roles/${role!.id}/update`, {
             method: 'PUT',
             body: JSON.stringify({
               name:        get('name'),
@@ -205,7 +203,7 @@ function RoleFormModal({ role, allPermissions, onClose, onSaved }: {
               level:       Number(get('level')),
             }),
           }).then(r => r.json()),
-          sensitiveFetch(`/super-admin/roles/${role!.id}/permissions/update`, {
+          apiFetch(`/super-admin/roles/${role!.id}/permissions/update`, {
             method: 'PUT',
             body: JSON.stringify({ permissionIds: Array.from(selectedPerms) }),
           }).then(r => r.json()),
@@ -216,7 +214,7 @@ function RoleFormModal({ role, allPermissions, onClose, onSaved }: {
         }
         onSaved('Rôle mis à jour avec succès.')
       } else {
-        const res = await sensitiveFetch('/super-admin/roles', {
+        const res = await apiFetch('/super-admin/roles', {
           method: 'POST',
           body: JSON.stringify({
             name:          get('name'),

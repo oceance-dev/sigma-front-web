@@ -1,7 +1,6 @@
 'use client'
 
 import { apiFetch } from '@/src/lib/api-client'
-import { useStepUp } from '@/src/context/step-up-context'
 import { useCallback, useEffect, useState, useTransition } from 'react'
 import { Building2, CalendarPlus, Check, Loader2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -39,7 +38,6 @@ export default function SuperAdminAssociationsPage() {
   const [detailTarget, setDetailTarget] = useState<Association | null>(null)
   const [feedback, setFeedback] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
   const [isPending, startTransition] = useTransition()
-  const { sensitiveFetch } = useStepUp()
 
   const load = useCallback(async (p: number, q: string) => {
     setIsLoading(true)
@@ -59,7 +57,7 @@ export default function SuperAdminAssociationsPage() {
   function action(id: string, type: 'approve' | 'reject') {
     if (type === 'reject' && !confirm('Rejeter cette association ?')) return
     startTransition(async () => {
-      const res = await sensitiveFetch(`/super-admin/associations/${id}/${type}`, { method: 'POST' })
+      const res = await apiFetch(`/super-admin/associations/${id}/${type}`, { method: 'POST' })
       const json = await res.json()
       if (res.ok) { setFeedback({ message: json.message, type: 'success' }); load(page, search) }
       else setFeedback({ message: json.message ?? 'Erreur.', type: 'error' })
@@ -351,7 +349,6 @@ function AssociationDetailModal({ association, onClose, onSaved }: {
   const [days, setDays] = useState(14)
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
-  const { sensitiveFetch } = useStepUp()
 
   // Le clamp n'est qu'un confort UI : le back reste l'autorité sur les bornes.
   const clampedDays = Math.min(MAX_TRIAL_DAYS, Math.max(MIN_TRIAL_DAYS, Math.trunc(days) || MIN_TRIAL_DAYS))
@@ -360,7 +357,7 @@ function AssociationDetailModal({ association, onClose, onSaved }: {
     e.preventDefault()
     setError(null)
     startTransition(async () => {
-      const res = await sensitiveFetch(`/super-admin/associations/${association.id}/extend-trial`, {
+      const res = await apiFetch(`/super-admin/associations/${association.id}/extend-trial`, {
         method: 'PATCH',
         body: JSON.stringify({ days: clampedDays }),
       })

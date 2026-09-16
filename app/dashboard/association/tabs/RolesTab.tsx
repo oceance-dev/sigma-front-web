@@ -15,7 +15,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { apiFetch } from '@/src/lib/api-client'
-import { useStepUp } from '@/src/context/step-up-context'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { ActionBtn } from './_shared'
 
@@ -118,7 +117,6 @@ function RoleFormModal({
   const [loadingPerms, setLoadingPerms] = useState(true)
   const [error,        setError]        = useState<string | null>(null)
   const [isPending,    startTransition] = useTransition()
-  const { sensitiveFetch } = useStepUp()
 
   useEffect(() => {
     apiFetch('/admin/role/permissions')
@@ -166,7 +164,7 @@ function RoleFormModal({
       }
       const url    = initial ? `/admin/role/${initial.key}` : '/admin/role'
       const method = initial ? 'PATCH' : 'POST'
-      const res    = await sensitiveFetch(url, { method, body: JSON.stringify(body) })
+      const res    = await apiFetch(url, { method, body: JSON.stringify(body) })
       const json   = await res.json()
       if (res.ok) onSaved(json.message ?? (initial ? 'Rôle modifié.' : 'Rôle créé.'))
       else setError(json.message ?? 'Erreur lors de l\'enregistrement.')
