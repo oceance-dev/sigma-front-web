@@ -2,6 +2,7 @@
 
 import { apiFetch } from '@/src/lib/api-client'
 import { useAuth } from '@/src/context/auth-context'
+import { useStepUp } from '@/src/context/step-up-context'
 import { useEffect, useState, useTransition } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { CheckCircle2, ExternalLink, Loader2, RefreshCw, X, Zap } from 'lucide-react'
@@ -29,6 +30,7 @@ export default function PlanPage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(justPaid ? 'Paiement reçu. Votre abonnement sera activé sous peu.' : null)
   const [isPending, startTransition] = useTransition()
+  const { sensitiveFetch } = useStepUp()
 
   const isActive = association?.hasValidSubscription ?? false
   const isTrial = association?.isTrial ?? false
@@ -48,7 +50,7 @@ export default function PlanPage() {
     setError(null)
     startTransition(async () => {
       try {
-        const res = await apiFetch('/billing/checkout', {
+        const res = await sensitiveFetch('/billing/checkout', {
           method: 'POST',
           body: JSON.stringify({
             priceId,
@@ -77,7 +79,7 @@ export default function PlanPage() {
   function cancelSubscription() {
     setError(null)
     startTransition(async () => {
-      const res = await apiFetch('/billing/cancel', { method: 'POST' })
+      const res = await sensitiveFetch('/billing/cancel', { method: 'POST' })
       const json = await res.json()
       if (!res.ok) { setError(json.message ?? 'Erreur lors de l\'annulation.'); return }
       setCancelAtPeriodEnd(true)
@@ -88,7 +90,7 @@ export default function PlanPage() {
   function resumeSubscription() {
     setError(null)
     startTransition(async () => {
-      const res = await apiFetch('/billing/resume', { method: 'POST' })
+      const res = await sensitiveFetch('/billing/resume', { method: 'POST' })
       const json = await res.json()
       if (!res.ok) { setError(json.message ?? 'Erreur lors de la réactivation.'); return }
       setCancelAtPeriodEnd(false)
@@ -99,7 +101,7 @@ export default function PlanPage() {
   function changePlan(newPriceId: string) {
     setError(null)
     startTransition(async () => {
-      const res = await apiFetch('/billing/change-plan', {
+      const res = await sensitiveFetch('/billing/change-plan', {
         method: 'POST',
         body: JSON.stringify({ newPriceId }),
       })

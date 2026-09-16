@@ -15,9 +15,9 @@ Sentry.init({
   enableLogs: true,
 
   dataCollection: {
-    // To disable sending user data and HTTP bodies, uncomment the lines below. For more info visit:
-    // https://docs.sentry.io/platforms/javascript/guides/nextjs/configuration/options/#dataCollection
-    // userInfo: false,
-    // httpBodies: [],
+    // Les corps de requête/réponse peuvent contenir un code 2FA ou un jeton de
+    // step-up (ex. POST /auth/2fa/verify) — Sentry ne redacte que les clés
+    // contenant "token", pas "code", donc on désactive la capture des bodies.
+    httpBodies: [],
   },
 });

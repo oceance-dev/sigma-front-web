@@ -20,13 +20,20 @@ interface ModalState {
 export function StepUpProvider({ children }: { children: React.ReactNode }) {
   const [modalState, setModalState] = useState<ModalState | null>(null)
   const [isVerifying, startVerifying] = useTransition()
-  const pending = useRef<{ resolve: (token: string) => void; reject: () => void } | null>(null)
+  // File d'attente plutôt qu'un slot unique : certains appelants (ex. la mise à
+  // jour d'un rôle super-admin) lancent plusieurs sensitiveFetch en parallèle
+  // (Promise.allSettled). Sans file, le second appel écraserait le resolver du
+  // premier, qui resterait bloqué indéfiniment — un seul code doit débloquer
+  // toutes les requêtes en attente à ce moment-là.
+  const pending = useRef<Array<{ resolve: (token: string) => void; reject: () => void }>>([])
 
   // Déclenché depuis sensitiveFetch (un handler, jamais un effet de montage) :
   // pas de risque de double-appel via le double-montage des effets en Strict Mode.
   const requestStepUp = useCallback((): Promise<string> => {
     return new Promise((resolve, reject) => {
-      pending.current = { resolve, reject }
+      pending.current.push({ resolve, reject })
+      if (pending.current.length > 1) return // une demande est déjà en cours, on rejoint la file
+
       setModalState({ isSending: true, sendError: null, verifyError: null })
 
       apiFetch('/auth/2fa/send', { method: 'POST' })
@@ -58,15 +65,15 @@ export function StepUpProvider({ children }: { children: React.ReactNode }) {
       }
       const token = json.data.stepUpToken as string
       stepUpStore.set(token)
-      pending.current?.resolve(token)
-      pending.current = null
+      pending.current.forEach((p) => p.resolve(token))
+      pending.current = []
       setModalState(null)
     })
   }, [])
 
   const handleCancel = useCallback(() => {
-    pending.current?.reject()
-    pending.current = null
+    pending.current.forEach((p) => p.reject())
+    pending.current = []
     setModalState(null)
   }, [])
 
