@@ -402,6 +402,34 @@ function AssociationDetailModal({ association, onClose, onSaved }: {
                   : '—'}
               </span>
             </div>
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Administrateur</span>
+              <span className="text-foreground truncate max-w-[60%]">
+                {association.admin ? `${association.admin.fullName} (${association.admin.email})` : '—'}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Nombre d&apos;utilisateurs</span>
+              <span className="text-foreground">{association.userCount}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Paiement</span>
+              <span className={`rounded px-2 py-0.5 text-xs font-medium ${association.hasActivePayment ? 'bg-primary/10 text-primary' : 'bg-destructive/10 text-destructive'}`}>
+                {association.hasActivePayment ? 'Actif' : 'Inactif'}
+              </span>
+            </div>
+            {association.siret && (
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">SIRET</span>
+                <span className="text-foreground">{association.siret}</span>
+              </div>
+            )}
+            {association.rna && (
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">RNA</span>
+                <span className="text-foreground">{association.rna}</span>
+              </div>
+            )}
           </div>
 
           <form onSubmit={extendTrial} className="flex flex-col gap-3 border-t border-border pt-4">

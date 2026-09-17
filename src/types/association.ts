@@ -33,6 +33,23 @@ export interface Association {
   trialEndsAt?: string | null
   createdAt: string
   updatedAt: string
+
+  // Coordonnées/identifiants organisationnels (réservés à la vue super-admin)
+  rna: string | null
+  siret: string | null
+  phone: string | null
+  address: string
+
+  // Facturation
+  hasValidSubscription: boolean
+  subscriptionEndsAt: string | null
+  subscriptionCancelAtPeriodEnd: boolean
+  subscribedAt: string | null
+
+  // Agrégats super-admin
+  userCount: number
+  admin: { fullName: string; email: string } | null
+  hasActivePayment: boolean
 }
 
 export interface AssociationMeta {
