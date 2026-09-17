@@ -2,11 +2,11 @@
 
 import { apiFetch } from '@/src/lib/api-client'
 import { useCallback, useEffect, useState, useTransition } from 'react'
-import { Building2, CalendarPlus, Check, Loader2, X } from 'lucide-react'
+import { Building2, CalendarPlus, Check, Loader2, Pencil, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import type { Association } from '@/src/types/association'
+import type { Association, AssociationUpdateBody } from '@/src/types/association'
 
 const STATUS_CLASSES: Record<string, string> = {
   active:    'bg-primary/10 text-primary',
@@ -340,6 +340,18 @@ function CreateAssociationModal({ onClose, onSaved }: {
 
 const MIN_TRIAL_DAYS = 1
 const MAX_TRIAL_DAYS = 365
+const POSTAL_CODE_RE = /^\d{5}$/
+
+function associationToUpdateBody(association: Association): AssociationUpdateBody {
+  return {
+    email:      association.email ?? '',
+    phone:      association.phone ?? '',
+    address:    association.address ?? '',
+    city:       association.city ?? '',
+    postalCode: association.postalCode ?? '',
+    country:    association.country ?? '',
+  }
+}
 
 function AssociationDetailModal({ association, onClose, onSaved }: {
   association: Association
@@ -349,6 +361,11 @@ function AssociationDetailModal({ association, onClose, onSaved }: {
   const [days, setDays] = useState(14)
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+
+  const [isEditing, setIsEditing] = useState(false)
+  const [formState, setFormState] = useState<AssociationUpdateBody>(() => associationToUpdateBody(association))
+  const [infoError, setInfoError] = useState<string | null>(null)
+  const [isSavingInfo, startInfoTransition] = useTransition()
 
   // Le clamp n'est qu'un confort UI : le back reste l'autorité sur les bornes.
   const clampedDays = Math.min(MAX_TRIAL_DAYS, Math.max(MIN_TRIAL_DAYS, Math.trunc(days) || MIN_TRIAL_DAYS))
@@ -364,6 +381,34 @@ function AssociationDetailModal({ association, onClose, onSaved }: {
       const json = await res.json()
       if (res.ok) { onSaved(json.message ?? `Essai prolongé de ${clampedDays} jour${clampedDays > 1 ? 's' : ''}.`) }
       else setError(json.message ?? 'Une erreur est survenue.')
+    })
+  }
+
+  function updateFormField<K extends keyof AssociationUpdateBody>(key: K, value: string) {
+    setFormState((prev) => ({ ...prev, [key]: value }))
+  }
+
+  function cancelEdit() {
+    setIsEditing(false)
+    setInfoError(null)
+    setFormState(associationToUpdateBody(association))
+  }
+
+  function saveInfo(e: React.FormEvent) {
+    e.preventDefault()
+    setInfoError(null)
+    if (formState.postalCode && !POSTAL_CODE_RE.test(formState.postalCode)) {
+      setInfoError('Le code postal doit contenir 5 chiffres.')
+      return
+    }
+    startInfoTransition(async () => {
+      const res = await apiFetch(`/super-admin/associations/${association.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(formState),
+      })
+      const json = await res.json()
+      if (res.ok) { onSaved(json.message ?? 'Association mise à jour avec succès.') }
+      else setInfoError(json.message ?? 'Une erreur est survenue.')
     })
   }
 
@@ -386,14 +431,110 @@ function AssociationDetailModal({ association, onClose, onSaved }: {
                 {STATUS_LABELS[association.status] ?? association.status}
               </span>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Ville</span>
-              <span className="text-foreground">{association.city}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Email</span>
-              <span className="text-foreground truncate max-w-[60%]">{association.email ?? '—'}</span>
-            </div>
+
+            {!isEditing && (
+              <>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Ville</span>
+                  <span className="text-foreground">{association.city || '—'}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Email</span>
+                  <span className="text-foreground truncate max-w-[60%]">{association.email ?? '—'}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Téléphone</span>
+                  <span className="text-foreground">{association.phone ?? '—'}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Adresse</span>
+                  <span className="text-foreground truncate max-w-[60%]">{association.address || '—'}</span>
+                </div>
+              </>
+            )}
+
+            {isEditing && (
+              <form id="edit-info-form" onSubmit={saveInfo} className="flex flex-col gap-3 py-2">
+                <div className="grid gap-1.5">
+                  <Label htmlFor="edit-email">Email</Label>
+                  <Input
+                    id="edit-email"
+                    type="email"
+                    value={formState.email}
+                    onChange={(e) => updateFormField('email', e.target.value)}
+                    disabled={isSavingInfo}
+                  />
+                </div>
+                <div className="grid gap-1.5">
+                  <Label htmlFor="edit-phone">Téléphone</Label>
+                  <Input
+                    id="edit-phone"
+                    type="tel"
+                    value={formState.phone}
+                    onChange={(e) => updateFormField('phone', e.target.value)}
+                    disabled={isSavingInfo}
+                  />
+                </div>
+                <div className="grid gap-1.5">
+                  <Label htmlFor="edit-address">Adresse</Label>
+                  <Input
+                    id="edit-address"
+                    value={formState.address}
+                    onChange={(e) => updateFormField('address', e.target.value)}
+                    disabled={isSavingInfo}
+                  />
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="edit-cp">Code postal</Label>
+                    <Input
+                      id="edit-cp"
+                      inputMode="numeric"
+                      maxLength={5}
+                      value={formState.postalCode}
+                      onChange={(e) => updateFormField('postalCode', e.target.value)}
+                      disabled={isSavingInfo}
+                    />
+                  </div>
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="edit-city">Ville</Label>
+                    <Input
+                      id="edit-city"
+                      value={formState.city}
+                      onChange={(e) => updateFormField('city', e.target.value)}
+                      disabled={isSavingInfo}
+                    />
+                  </div>
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="edit-country">Pays</Label>
+                    <Input
+                      id="edit-country"
+                      value={formState.country}
+                      onChange={(e) => updateFormField('country', e.target.value)}
+                      disabled={isSavingInfo}
+                    />
+                  </div>
+                </div>
+                {infoError && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{infoError}</p>}
+                <div className="flex justify-end gap-2 pt-1">
+                  <Button type="button" variant="secondary" size="sm" onClick={cancelEdit} disabled={isSavingInfo}>
+                    Annuler
+                  </Button>
+                  <Button type="submit" size="sm" disabled={isSavingInfo}>
+                    {isSavingInfo ? 'Enregistrement…' : 'Enregistrer'}
+                  </Button>
+                </div>
+              </form>
+            )}
+
+            {!isEditing && (
+              <div className="flex justify-end pt-1">
+                <Button type="button" variant="ghost" size="xs" onClick={() => setIsEditing(true)}>
+                  <Pencil size={12} /> Modifier
+                </Button>
+              </div>
+            )}
+
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">Période d'essai</span>
               <span className="text-foreground">
