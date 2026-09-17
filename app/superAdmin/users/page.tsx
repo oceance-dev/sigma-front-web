@@ -2,8 +2,8 @@
 
 import { apiFetch } from '@/src/lib/api-client'
 import { useCallback, useEffect, useState } from 'react'
-import { Loader2, Users } from 'lucide-react'
-import type { Member } from '@/src/types/member'
+import { Loader2, Users, X } from 'lucide-react'
+import type { Member, MemberDetailResponse } from '@/src/types/member'
 
 export default function SuperAdminUsersPage() {
   const [members, setMembers] = useState<Member[]>([])
@@ -11,6 +11,7 @@ export default function SuperAdminUsersPage() {
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [isLoading, setIsLoading] = useState(true)
+  const [detailTarget, setDetailTarget] = useState<Member | null>(null)
 
   const load = useCallback(async (p: number, q: string) => {
     setIsLoading(true)
@@ -58,7 +59,14 @@ export default function SuperAdminUsersPage() {
           {members.map((m) => {
             const initials = `${m.firstName[0]}${m.lastName[0]}`.toUpperCase()
             return (
-              <div key={m.id} className="flex items-center gap-3 bg-card px-4 py-3 hover:bg-muted/40 transition-colors">
+              <div
+                key={m.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => setDetailTarget(m)}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setDetailTarget(m) } }}
+                className="flex items-center gap-3 bg-card px-4 py-3 hover:bg-muted/40 transition-colors cursor-pointer outline-none focus-visible:bg-muted/40"
+              >
                 <div className="h-9 w-9 shrink-0 rounded-full bg-primary/10 flex items-center justify-center text-xs font-semibold text-primary">
                   {initials}
                 </div>
@@ -87,6 +95,132 @@ export default function SuperAdminUsersPage() {
           </div>
         </div>
       )}
+
+      {detailTarget && (
+        <UserDetailModal userId={detailTarget.id} onClose={() => setDetailTarget(null)} />
+      )}
+    </div>
+  )
+}
+
+function UserDetailModal({ userId, onClose }: { userId: string; onClose: () => void }) {
+  const [data, setData] = useState<MemberDetailResponse | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+    apiFetch(`/super-admin/users/${userId}`).then(async (res) => {
+      const json = await res.json()
+      if (cancelled) return
+      if (res.ok) setData(json.data)
+      else setError(json.message ?? 'Utilisateur introuvable.')
+      setIsLoading(false)
+    })
+    return () => { cancelled = true }
+  }, [userId])
+
+  const user = data?.user
+  const isPendingCandidate = !data?.role && !!user?.associationId
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
+      <div className="w-full max-w-md rounded-xl border border-border bg-card shadow-xl">
+        <div className="flex items-center justify-between border-b border-border px-4 py-3">
+          <h2 className="text-sm font-medium text-foreground truncate">{user?.fullName ?? 'Détail utilisateur'}</h2>
+          <button onClick={onClose} className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-accent shrink-0">
+            <X size={14} />
+          </button>
+        </div>
+
+        <div className="p-4">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-10">
+              <Loader2 size={20} className="animate-spin text-muted-foreground" />
+            </div>
+          ) : error ? (
+            <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>
+          ) : user && data && (
+            <div className="flex flex-col gap-4 text-sm">
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Email</span>
+                  <span className="text-foreground truncate max-w-[60%]">{user.email}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Téléphone</span>
+                  <span className="text-foreground">{user.phone ?? '—'}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Date de naissance</span>
+                  <span className="text-foreground">
+                    {user.dateOfBirth ? new Date(user.dateOfBirth).toLocaleDateString('fr-FR') : '—'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Sexe</span>
+                  <span className="text-foreground">{user.sexe ?? '—'}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Ville</span>
+                  <span className="text-foreground">{user.city_code || '—'}</span>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1 border-t border-border pt-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Statut</span>
+                  <span className={`rounded px-2 py-0.5 text-xs font-medium ${user.isActive ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
+                    {user.isActive ? 'Actif' : 'Inactif'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Membre</span>
+                  <span className="text-foreground">{user.membre ? 'Oui' : 'Non'}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Rôle</span>
+                  <span className="text-foreground">
+                    {data.role?.name ?? (isPendingCandidate ? 'Candidat en attente' : '—')}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Association</span>
+                  <span className="text-foreground truncate max-w-[60%]">
+                    {data.association?.name ?? (user.isSuperAdmin ? 'Aucune (super admin plateforme)' : '—')}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1 border-t border-border pt-3 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Dernière connexion</span>
+                  <span className="text-foreground">
+                    {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString('fr-FR') : '—'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Email vérifié</span>
+                  <span className="text-foreground">{user.isEmailVerified ? 'Oui' : 'Non'}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Compte verrouillé</span>
+                  {user.isLocked ? (
+                    <span className="rounded px-2 py-0.5 text-xs font-medium bg-destructive/10 text-destructive">Verrouillé</span>
+                  ) : (
+                    <span className="text-foreground">Non</span>
+                  )}
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Créé le</span>
+                  <span className="text-foreground">{new Date(user.createdAt).toLocaleDateString('fr-FR')}</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   )
 }
