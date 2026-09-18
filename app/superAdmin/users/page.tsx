@@ -2,6 +2,7 @@
 
 import { apiFetch } from '@/src/lib/api-client'
 import { useCallback, useEffect, useState, useTransition } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { KeyRound, Loader2, Trash2, Users, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/src/context/auth-context'
@@ -9,12 +10,16 @@ import { DeletionCodeModal } from '@/components/DeletionCodeModal'
 import type { Member, MemberDetailResponse } from '@/src/types/member'
 
 export default function SuperAdminUsersPage() {
+  const searchParams = useSearchParams()
   const [members, setMembers] = useState<Member[]>([])
   const [meta, setMeta] = useState<{ total: number; lastPage: number; currentPage: number } | null>(null)
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [isLoading, setIsLoading] = useState(true)
-  const [detailTarget, setDetailTarget] = useState<Member | null>(null)
+  // Juste l'id : la modale ne se sert que de ça (elle refait son propre fetch de détail),
+  // ce qui permet de l'ouvrir par lien direct (?userId=...) sans avoir la ligne en main —
+  // utilisé depuis la colonne "Qui" du panel Rate Limits.
+  const [detailTargetId, setDetailTargetId] = useState<string | null>(() => searchParams.get('userId'))
   const [feedback, setFeedback] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
 
   const load = useCallback(async (p: number, q: string) => {
@@ -74,8 +79,8 @@ export default function SuperAdminUsersPage() {
                 key={m.id}
                 role="button"
                 tabIndex={0}
-                onClick={() => setDetailTarget(m)}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setDetailTarget(m) } }}
+                onClick={() => setDetailTargetId(m.id)}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setDetailTargetId(m.id) } }}
                 className="flex items-center gap-3 bg-card px-4 py-3 hover:bg-muted/40 transition-colors cursor-pointer outline-none focus-visible:bg-muted/40"
               >
                 <div className="h-9 w-9 shrink-0 rounded-full bg-primary/10 flex items-center justify-center text-xs font-semibold text-primary">
@@ -107,13 +112,13 @@ export default function SuperAdminUsersPage() {
         </div>
       )}
 
-      {detailTarget && (
+      {detailTargetId && (
         <UserDetailModal
-          userId={detailTarget.id}
-          onClose={() => setDetailTarget(null)}
+          userId={detailTargetId}
+          onClose={() => setDetailTargetId(null)}
           onFeedback={(f) => setFeedback(f)}
           onDeleted={(id, message) => {
-            setDetailTarget(null)
+            setDetailTargetId(null)
             setMembers((prev) => prev.filter((m) => m.id !== id))
             setMeta((prev) => (prev ? { ...prev, total: Math.max(0, prev.total - 1) } : prev))
             setFeedback({ message, type: 'success' })
