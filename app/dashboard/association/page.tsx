@@ -14,15 +14,17 @@ const LienInscriptionTab     = lazy(() => import('./tabs/LienInscriptionTab'))
 const FormulaireInscriptionTab = lazy(() => import('./tabs/FormulaireInscriptionTab'))
 const MembresTab             = lazy(() => import('./tabs/MembresTab'))
 const RolesTab               = lazy(() => import('./tabs/RolesTab'))
+const DemandesRgpdTab        = lazy(() => import('./tabs/DemandesRgpdTab'))
 
 // ── Tabs config ────────────────────────────────────────────
 
 const ALL_TABS = [
-  { id: 'association',            label: 'Association',           gendarmerieOnly: false, onlineOnly: false },
-  { id: 'lien-inscription',       label: "Gestion d'inscription", gendarmerieOnly: false, onlineOnly: false },
-  { id: 'formulaire-inscription', label: 'Formulaire',            gendarmerieOnly: false, onlineOnly: true  },
-  { id: 'membres',                label: 'Membres',               gendarmerieOnly: false, onlineOnly: false },
-  { id: 'roles',                  label: 'Rôles',                 gendarmerieOnly: false, onlineOnly: false },
+  { id: 'association',            label: 'Association',           gendarmerieOnly: false, onlineOnly: false, adminOnly: false },
+  { id: 'lien-inscription',       label: "Gestion d'inscription", gendarmerieOnly: false, onlineOnly: false, adminOnly: false },
+  { id: 'formulaire-inscription', label: 'Formulaire',            gendarmerieOnly: false, onlineOnly: true,  adminOnly: false },
+  { id: 'membres',                label: 'Membres',               gendarmerieOnly: false, onlineOnly: false, adminOnly: false },
+  { id: 'roles',                  label: 'Rôles',                 gendarmerieOnly: false, onlineOnly: false, adminOnly: false },
+  { id: 'demandes-rgpd',          label: 'Demandes RGPD',         gendarmerieOnly: false, onlineOnly: false, adminOnly: true  },
 ] as const
 
 type TabId = (typeof ALL_TABS)[number]['id']
@@ -67,6 +69,7 @@ export default function AssociationPage() {
   const tabs = ALL_TABS.filter((t) => {
     if (t.gendarmerieOnly && !isGendarmerie) return false
     if (t.onlineOnly && !acceptsOnline) return false
+    if (t.adminOnly && !canEdit) return false
     return true
   })
 
@@ -154,6 +157,8 @@ export default function AssociationPage() {
         {tab === 'membres' && <MembresTab />}
 
         {tab === 'roles' && <RolesTab />}
+
+        {tab === 'demandes-rgpd' && <DemandesRgpdTab />}
       </Suspense>
     </div>
   )

@@ -9,21 +9,19 @@ import {
   Building2,
   Calendar,
   CheckCircle2,
-  Download,
-  FileText,
   KeyRound,
   Mail,
   MapPin,
   Pencil,
   Phone,
   Shield,
-  Trash2,
   User,
   X,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { PersonalDataRequestsSection } from '@/components/account-requests/PersonalDataRequestsSection'
 
 import { formatDate } from '@/src/lib/date-utils'
 
@@ -49,23 +47,6 @@ interface UserProfile {
   updatedAt: string
 }
 
-type AccountRequestType = 'account_update' | 'data_access' | 'data_deletion'
-type AccountRequestStatus = 'pending' | 'escalated' | 'approved' | 'rejected'
-
-interface AccountRequest {
-  id: string
-  type: AccountRequestType
-  status: AccountRequestStatus
-  reason: string | null
-  createdAt: string
-}
-
-const REQUEST_TYPE_LABELS: Record<AccountRequestType, string> = {
-  account_update: 'Modification de compte',
-  data_access: 'Accès aux données',
-  data_deletion: 'Suppression des données',
-}
-
 // ── Page ───────────────────────────────────────────────────
 
 type OpenSection = 'edit' | 'email' | 'password' | 'delete' | null
@@ -76,8 +57,6 @@ export default function ProfilPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [open, setOpen] = useState<OpenSection>(null)
   const [globalSuccess, setGlobalSuccess] = useState<string | null>(null)
-  const [activeRequest, setActiveRequest] = useState<AccountRequest | null>(null)
-  const [isLoadingRequest, setIsLoadingRequest] = useState(true)
 
   useEffect(() => {
     apiFetch('/users/me')
@@ -86,18 +65,6 @@ export default function ProfilPage() {
       .catch(() => {})
       .finally(() => setIsLoading(false))
   }, [])
-
-  useEffect(() => {
-    if (!association) return
-    apiFetch('/account-requests?limit=1')
-      .then((r) => r.json())
-      .then((json) => {
-        const latest: AccountRequest | undefined = json.data?.requests?.[0]
-        setActiveRequest(latest && (latest.status === 'pending' || latest.status === 'escalated') ? latest : null)
-      })
-      .catch(() => {})
-      .finally(() => setIsLoadingRequest(false))
-  }, [association])
 
   const p: UserProfile | null = profile ?? (authUser ? {
     id: authUser.id,
@@ -257,18 +224,7 @@ export default function ProfilPage() {
       </div>
 
       {/* ── Mes données personnelles (RGPD) ──────────────── */}
-      {association && (
-        <PersonalDataSection
-          isAdmin={!!p?.isAdmin}
-          activeRequest={activeRequest}
-          isLoadingRequest={isLoadingRequest}
-          onCreated={(request, msg) => {
-            setActiveRequest(request)
-            setGlobalSuccess(msg)
-            setTimeout(() => setGlobalSuccess(null), 4000)
-          }}
-        />
-      )}
+      {association && <PersonalDataRequestsSection isAdmin={!!p?.isAdmin} />}
 
       {/* ── Zone dangereuse ─────────────────────────────── */}
       {/* Réservée aux comptes sans association : pour un membre rattaché à
@@ -510,109 +466,5 @@ function DeleteAccountForm({ onDeleted, onCancel }: { onDeleted: () => void; onC
         </Button>
       </div>
     </form>
-  )
-}
-
-// ── PersonalDataSection ────────────────────────────────────
-
-function PersonalDataSection({ isAdmin, activeRequest, isLoadingRequest, onCreated }: {
-  isAdmin: boolean
-  activeRequest: AccountRequest | null
-  isLoadingRequest: boolean
-  onCreated: (request: AccountRequest, message: string) => void
-}) {
-  const [error, setError] = useState<string | null>(null)
-  const [isPending, startTransition] = useTransition()
-
-  function submitRequest(type: AccountRequestType, reason?: string) {
-    setError(null)
-    startTransition(async () => {
-      const res = await apiFetch('/account-requests', {
-        method: 'POST',
-        body: JSON.stringify(reason ? { type, reason } : { type }),
-      })
-      const json = await res.json()
-      if (res.ok) {
-        onCreated(json.data.request, json.message ?? 'Demande envoyée, en attente de traitement par un administrateur.')
-      } else {
-        setError(json.message ?? 'Une erreur est survenue.')
-      }
-    })
-  }
-
-  const disabled = isPending || isLoadingRequest || !!activeRequest
-
-  return (
-    <div className="rounded-xl border border-border bg-card overflow-hidden">
-      <div className="px-5 py-4 border-b border-border">
-        <div className="flex items-center gap-2">
-          <FileText size={16} className="text-muted-foreground" />
-          <p className="text-sm font-medium text-foreground">Mes données personnelles</p>
-        </div>
-      </div>
-
-      {activeRequest && (
-        <div className="px-5 py-3 border-b border-border bg-muted/30 text-xs text-muted-foreground">
-          Demande en cours : <span className="font-medium text-foreground">{REQUEST_TYPE_LABELS[activeRequest.type]}</span>, envoyée le {formatDate(activeRequest.createdAt)}.
-        </div>
-      )}
-
-      {error && (
-        <div className="px-5 pt-3">
-          <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>
-        </div>
-      )}
-
-      <div className="divide-y divide-border">
-        <button
-          onClick={() => submitRequest('data_access', 'Demande de données complètes (avec documents)')}
-          disabled={disabled}
-          className="flex w-full items-center justify-between px-5 py-4 hover:bg-muted/40 transition-colors text-left disabled:opacity-50 disabled:hover:bg-transparent disabled:cursor-not-allowed"
-        >
-          <div className="flex items-center gap-3">
-            <Download size={15} className="text-muted-foreground shrink-0" />
-            <div>
-              <p className="text-sm font-medium text-foreground">Demander vos données complètes</p>
-              <p className="text-xs text-muted-foreground">Inclut les documents associés à votre compte.</p>
-            </div>
-          </div>
-          <span className="text-xs text-primary font-medium shrink-0 ml-4">Demander</span>
-        </button>
-
-        <button
-          onClick={() => submitRequest('data_access', 'Demande de données simples (sans documents)')}
-          disabled={disabled}
-          className="flex w-full items-center justify-between px-5 py-4 hover:bg-muted/40 transition-colors text-left disabled:opacity-50 disabled:hover:bg-transparent disabled:cursor-not-allowed"
-        >
-          <div className="flex items-center gap-3">
-            <Download size={15} className="text-muted-foreground shrink-0" />
-            <div>
-              <p className="text-sm font-medium text-foreground">Demander des données simples sans documents</p>
-              <p className="text-xs text-muted-foreground">Vos informations de profil, sans les pièces jointes.</p>
-            </div>
-          </div>
-          <span className="text-xs text-primary font-medium shrink-0 ml-4">Demander</span>
-        </button>
-
-        <button
-          onClick={() => submitRequest('data_deletion')}
-          disabled={disabled}
-          className="flex w-full items-center justify-between px-5 py-4 hover:bg-muted/40 transition-colors text-left disabled:opacity-50 disabled:hover:bg-transparent disabled:cursor-not-allowed"
-        >
-          <div className="flex items-center gap-3">
-            <Trash2 size={15} className="text-muted-foreground shrink-0" />
-            <div>
-              <p className="text-sm font-medium text-foreground">
-                {isAdmin ? 'Demander la suppression de mes données' : 'Demander la suppression de mon compte'}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Doit être validée par un administrateur de l&apos;association. Vos données seront anonymisées ; votre ligne de membre est conservée pour l&apos;historique d&apos;adhésion.
-              </p>
-            </div>
-          </div>
-          <span className="text-xs text-destructive font-medium shrink-0 ml-4">Demander</span>
-        </button>
-      </div>
-    </div>
   )
 }
