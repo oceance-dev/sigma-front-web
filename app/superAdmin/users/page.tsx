@@ -2,9 +2,10 @@
 
 import { apiFetch } from '@/src/lib/api-client'
 import { useCallback, useEffect, useState, useTransition } from 'react'
-import { KeyRound, Loader2, Users, X } from 'lucide-react'
+import { KeyRound, Loader2, Trash2, Users, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/src/context/auth-context'
+import { DeletionCodeModal } from '@/components/DeletionCodeModal'
 import type { Member, MemberDetailResponse } from '@/src/types/member'
 
 export default function SuperAdminUsersPage() {
@@ -111,22 +112,30 @@ export default function SuperAdminUsersPage() {
           userId={detailTarget.id}
           onClose={() => setDetailTarget(null)}
           onFeedback={(f) => setFeedback(f)}
+          onDeleted={(id, message) => {
+            setDetailTarget(null)
+            setMembers((prev) => prev.filter((m) => m.id !== id))
+            setMeta((prev) => (prev ? { ...prev, total: Math.max(0, prev.total - 1) } : prev))
+            setFeedback({ message, type: 'success' })
+          }}
         />
       )}
     </div>
   )
 }
 
-function UserDetailModal({ userId, onClose, onFeedback }: {
+function UserDetailModal({ userId, onClose, onFeedback, onDeleted }: {
   userId: string
   onClose: () => void
   onFeedback: (feedback: { message: string; type: 'success' | 'error' }) => void
+  onDeleted: (userId: string, message: string) => void
 }) {
   const { user: currentUser } = useAuth()
   const [data, setData] = useState<MemberDetailResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isConfirmingReset, setIsConfirmingReset] = useState(false)
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -242,17 +251,28 @@ function UserDetailModal({ userId, onClose, onFeedback }: {
 
               <div className="flex flex-col gap-2 border-t border-destructive/20 pt-4">
                 <p className="text-xs font-semibold text-destructive uppercase tracking-wider">Zone dangereuse</p>
-                <Button
-                  type="button"
-                  variant="destructive"
-                  size="sm"
-                  className="self-start"
-                  onClick={() => setIsConfirmingReset(true)}
-                  disabled={isSelf}
-                  title={isSelf ? 'Vous ne pouvez pas réinitialiser votre propre mot de passe depuis cet écran.' : undefined}
-                >
-                  <KeyRound size={14} /> Réinitialiser le mot de passe
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setIsConfirmingReset(true)}
+                    disabled={isSelf}
+                    title={isSelf ? 'Vous ne pouvez pas réinitialiser votre propre mot de passe depuis cet écran.' : undefined}
+                  >
+                    <KeyRound size={14} /> Réinitialiser le mot de passe
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setIsConfirmingDelete(true)}
+                    disabled={isSelf}
+                    title={isSelf ? 'Vous ne pouvez pas supprimer votre propre compte depuis cet écran.' : undefined}
+                  >
+                    <Trash2 size={14} /> Supprimer l’utilisateur
+                  </Button>
+                </div>
               </div>
             </div>
           )}
@@ -270,6 +290,27 @@ function UserDetailModal({ userId, onClose, onFeedback }: {
           onClose()
           onFeedback({ message: msg, type: 'success' })
         }}
+      />
+    )}
+
+    {isConfirmingDelete && user && (
+      <DeletionCodeModal
+        title="Supprimer l’utilisateur"
+        warningText={
+          <>
+            Vous êtes sur le point de supprimer le compte de{' '}
+            <span className="font-medium text-foreground">{user.fullName}</span> (désactivation
+            immédiate, données conservées). Un code de confirmation vous sera envoyé par email, à
+            vous, pas à l&apos;utilisateur.
+          </>
+        }
+        requestCode={() => apiFetch(`/super-admin/users/${userId}/deletion-code`, { method: 'POST' })}
+        confirmDeletion={(code) => apiFetch(`/super-admin/users/${userId}`, {
+          method: 'DELETE',
+          body: JSON.stringify({ code }),
+        })}
+        onDeleted={(msg) => { setIsConfirmingDelete(false); onDeleted(userId, msg) }}
+        onCancel={() => setIsConfirmingDelete(false)}
       />
     )}
     </>

@@ -10,6 +10,7 @@ interface TwoFactorCodeFormProps {
   error: string | null
   isPending: boolean
   submitLabel?: string
+  submitVariant?: 'default' | 'destructive'
   onSubmit: (code: string) => void
   footer?: React.ReactNode
 }
@@ -19,6 +20,7 @@ export function TwoFactorCodeForm({
   error,
   isPending,
   submitLabel = 'Vérifier',
+  submitVariant,
   onSubmit,
   footer,
 }: TwoFactorCodeFormProps) {
@@ -54,7 +56,7 @@ export function TwoFactorCodeForm({
           {error}
         </p>
       )}
-      <Button type="submit" className="w-full" disabled={isPending || code.length !== 6}>
+      <Button type="submit" variant={submitVariant} className="w-full" disabled={isPending || code.length !== 6}>
         {isPending ? 'Vérification…' : submitLabel}
       </Button>
       {footer}

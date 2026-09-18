@@ -6,6 +6,7 @@ import { Building2, CalendarPlus, Check, Loader2, Pencil, Trash2, X } from 'luci
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { DeletionCodeModal } from '@/components/DeletionCodeModal'
 import type { Association, AssociationUpdateBody } from '@/src/types/association'
 
 const STATUS_CLASSES: Record<string, string> = {
@@ -367,10 +368,7 @@ function AssociationDetailModal({ association, onClose, onSaved }: {
   const [infoError, setInfoError] = useState<string | null>(null)
   const [isSavingInfo, startInfoTransition] = useTransition()
 
-  const [deleteStep, setDeleteStep] = useState<'idle' | 'requesting' | 'confirming'>('idle')
-  const [deleteCode, setDeleteCode] = useState('')
-  const [deleteError, setDeleteError] = useState<string | null>(null)
-  const [isDeletePending, startDeleteTransition] = useTransition()
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
 
   // Le clamp n'est qu'un confort UI : le back reste l'autorité sur les bornes.
   const clampedDays = Math.min(MAX_TRIAL_DAYS, Math.max(MIN_TRIAL_DAYS, Math.trunc(days) || MIN_TRIAL_DAYS))
@@ -415,35 +413,6 @@ function AssociationDetailModal({ association, onClose, onSaved }: {
       if (res.ok) { onSaved(json.message ?? 'Association mise à jour avec succès.') }
       else setInfoError(json.message ?? 'Une erreur est survenue.')
     })
-  }
-
-  function requestDeletion() {
-    setDeleteError(null)
-    startDeleteTransition(async () => {
-      const res = await apiFetch(`/super-admin/associations/${association.id}/deletion-code`, { method: 'POST' })
-      const json = await res.json()
-      if (res.ok) { setDeleteStep('confirming') }
-      else setDeleteError(json.message ?? 'Impossible d’envoyer le code.')
-    })
-  }
-
-  function confirmDeletion() {
-    setDeleteError(null)
-    startDeleteTransition(async () => {
-      const res = await apiFetch(`/super-admin/associations/${association.id}`, {
-        method: 'DELETE',
-        body: JSON.stringify({ code: deleteCode }),
-      })
-      const json = await res.json()
-      if (res.ok) { onSaved(json.message ?? 'Association supprimée avec succès.') }
-      else setDeleteError(json.message ?? 'Une erreur est survenue.')
-    })
-  }
-
-  function cancelDeletion() {
-    setDeleteStep('idle')
-    setDeleteCode('')
-    setDeleteError(null)
   }
 
   return (
@@ -635,11 +604,8 @@ function AssociationDetailModal({ association, onClose, onSaved }: {
           {!isEditing && (
             <div className="flex flex-col gap-2 border-t border-destructive/20 pt-4">
               <p className="text-xs font-semibold text-destructive uppercase tracking-wider">Zone dangereuse</p>
-              {deleteStep === 'idle' && deleteError && (
-                <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{deleteError}</p>
-              )}
-              <Button type="button" variant="destructive" onClick={requestDeletion} disabled={isDeletePending}>
-                <Trash2 size={14} /> {isDeletePending ? 'Envoi du code…' : 'Supprimer l’association'}
+              <Button type="button" variant="destructive" onClick={() => setShowDeleteModal(true)}>
+                <Trash2 size={14} /> Supprimer l’association
               </Button>
             </div>
           )}
@@ -647,73 +613,27 @@ function AssociationDetailModal({ association, onClose, onSaved }: {
       </div>
     </div>
 
-    {deleteStep === 'confirming' && (
-      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4"
-        onClick={(e) => { if (e.target === e.currentTarget) cancelDeletion() }}>
-        <div className="w-full max-w-sm rounded-xl border border-border bg-card shadow-xl">
-          <div className="flex items-center justify-between border-b border-border px-4 py-3">
-            <h2 className="text-sm font-medium text-foreground">Confirmer la suppression</h2>
-            <button onClick={cancelDeletion} className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-accent shrink-0">
-              <X size={14} />
-            </button>
-          </div>
-
-          <div className="flex flex-col gap-4 p-4">
-            <p className="text-sm text-muted-foreground">
-              Vous êtes sur le point de supprimer définitivement{' '}
-              <span className="font-medium text-foreground">{association.name}</span>.
-              {association.userCount > 0 && (
-                <> {association.userCount} utilisateur{association.userCount > 1 ? 's' : ''} {association.userCount > 1 ? 'seront désactivés' : 'sera désactivé'}.</>
-              )}{' '}
-              Cette action est irréversible.
-            </p>
-
-            <div className="grid gap-1.5">
-              <Label htmlFor="delete-code">Code reçu par email</Label>
-              <Input
-                id="delete-code"
-                inputMode="numeric"
-                pattern="[0-9]{6}"
-                maxLength={6}
-                autoComplete="one-time-code"
-                autoFocus
-                placeholder="123456"
-                value={deleteCode}
-                onChange={(e) => setDeleteCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                disabled={isDeletePending}
-                className="text-center text-lg tracking-[0.4em]"
-              />
-            </div>
-
-            {deleteError && (
-              <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{deleteError}</p>
-            )}
-
-            <button
-              type="button"
-              onClick={requestDeletion}
-              disabled={isDeletePending}
-              className="self-start text-sm text-muted-foreground hover:text-foreground underline-offset-4 hover:underline disabled:opacity-50"
-            >
-              Renvoyer le code
-            </button>
-
-            <div className="flex justify-end gap-2">
-              <Button type="button" variant="secondary" onClick={cancelDeletion} disabled={isDeletePending}>
-                Annuler
-              </Button>
-              <Button
-                type="button"
-                variant="destructive"
-                onClick={confirmDeletion}
-                disabled={isDeletePending || deleteCode.length !== 6}
-              >
-                {isDeletePending ? 'Suppression…' : 'Confirmer la suppression'}
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
+    {showDeleteModal && (
+      <DeletionCodeModal
+        title="Supprimer l’association"
+        warningText={
+          <>
+            Vous êtes sur le point de supprimer définitivement{' '}
+            <span className="font-medium text-foreground">{association.name}</span>.
+            {association.userCount > 0 && (
+              <> {association.userCount} utilisateur{association.userCount > 1 ? 's' : ''} {association.userCount > 1 ? 'seront désactivés' : 'sera désactivé'}.</>
+            )}{' '}
+            Cette action est irréversible. Un code de confirmation vous sera envoyé par email.
+          </>
+        }
+        requestCode={() => apiFetch(`/super-admin/associations/${association.id}/deletion-code`, { method: 'POST' })}
+        confirmDeletion={(code) => apiFetch(`/super-admin/associations/${association.id}`, {
+          method: 'DELETE',
+          body: JSON.stringify({ code }),
+        })}
+        onDeleted={(msg) => { setShowDeleteModal(false); onSaved(msg) }}
+        onCancel={() => setShowDeleteModal(false)}
+      />
     )}
     </>
   )
