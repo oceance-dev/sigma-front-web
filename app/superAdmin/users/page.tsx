@@ -1,8 +1,10 @@
 'use client'
 
 import { apiFetch } from '@/src/lib/api-client'
-import { useCallback, useEffect, useState } from 'react'
-import { Loader2, Users, X } from 'lucide-react'
+import { useCallback, useEffect, useState, useTransition } from 'react'
+import { KeyRound, Loader2, Users, X } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { useAuth } from '@/src/context/auth-context'
 import type { Member, MemberDetailResponse } from '@/src/types/member'
 
 export default function SuperAdminUsersPage() {
@@ -12,6 +14,7 @@ export default function SuperAdminUsersPage() {
   const [page, setPage] = useState(1)
   const [isLoading, setIsLoading] = useState(true)
   const [detailTarget, setDetailTarget] = useState<Member | null>(null)
+  const [feedback, setFeedback] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
 
   const load = useCallback(async (p: number, q: string) => {
     setIsLoading(true)
@@ -34,6 +37,13 @@ export default function SuperAdminUsersPage() {
         <h1 className="text-xl font-bold text-foreground">Utilisateurs</h1>
         <p className="text-sm text-muted-foreground mt-0.5">Tous les utilisateurs de la plateforme</p>
       </div>
+
+      {feedback && (
+        <div className={`flex items-center justify-between rounded-lg px-4 py-2 text-sm ${feedback.type === 'success' ? 'bg-primary/10 text-primary' : 'bg-destructive/10 text-destructive'}`}>
+          {feedback.message}
+          <button onClick={() => setFeedback(null)}><X size={13} /></button>
+        </div>
+      )}
 
       <div className="flex items-center gap-3">
         <input
@@ -97,16 +107,26 @@ export default function SuperAdminUsersPage() {
       )}
 
       {detailTarget && (
-        <UserDetailModal userId={detailTarget.id} onClose={() => setDetailTarget(null)} />
+        <UserDetailModal
+          userId={detailTarget.id}
+          onClose={() => setDetailTarget(null)}
+          onFeedback={(f) => setFeedback(f)}
+        />
       )}
     </div>
   )
 }
 
-function UserDetailModal({ userId, onClose }: { userId: string; onClose: () => void }) {
+function UserDetailModal({ userId, onClose, onFeedback }: {
+  userId: string
+  onClose: () => void
+  onFeedback: (feedback: { message: string; type: 'success' | 'error' }) => void
+}) {
+  const { user: currentUser } = useAuth()
   const [data, setData] = useState<MemberDetailResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isConfirmingReset, setIsConfirmingReset] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -122,8 +142,10 @@ function UserDetailModal({ userId, onClose }: { userId: string; onClose: () => v
 
   const user = data?.user
   const isPendingCandidate = !data?.role && !!user?.associationId
+  const isSelf = !!currentUser && currentUser.id === userId
 
   return (
+    <>
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
       <div className="w-full max-w-md rounded-xl border border-border bg-card shadow-xl">
@@ -217,8 +239,96 @@ function UserDetailModal({ userId, onClose }: { userId: string; onClose: () => v
                   <span className="text-foreground">{new Date(user.createdAt).toLocaleDateString('fr-FR')}</span>
                 </div>
               </div>
+
+              <div className="flex flex-col gap-2 border-t border-destructive/20 pt-4">
+                <p className="text-xs font-semibold text-destructive uppercase tracking-wider">Zone dangereuse</p>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  className="self-start"
+                  onClick={() => setIsConfirmingReset(true)}
+                  disabled={isSelf}
+                  title={isSelf ? 'Vous ne pouvez pas réinitialiser votre propre mot de passe depuis cet écran.' : undefined}
+                >
+                  <KeyRound size={14} /> Réinitialiser le mot de passe
+                </Button>
+              </div>
             </div>
           )}
+        </div>
+      </div>
+    </div>
+
+    {isConfirmingReset && user && (
+      <ResetPasswordModal
+        userId={userId}
+        userName={user.fullName}
+        onClose={() => setIsConfirmingReset(false)}
+        onSuccess={(msg) => {
+          setIsConfirmingReset(false)
+          onClose()
+          onFeedback({ message: msg, type: 'success' })
+        }}
+      />
+    )}
+    </>
+  )
+}
+
+function ResetPasswordModal({ userId, userName, onClose, onSuccess }: {
+  userId: string
+  userName: string
+  onClose: () => void
+  onSuccess: (message: string) => void
+}) {
+  const [error, setError] = useState<string | null>(null)
+  const [isPending, startTransition] = useTransition()
+
+  function confirmReset() {
+    setError(null)
+    startTransition(async () => {
+      const res = await apiFetch(`/super-admin/users/${userId}/reset-password`, { method: 'POST' })
+      const json = await res.json().catch(() => ({}))
+      if (res.ok) onSuccess(json.message ?? 'Email envoyé à l\'utilisateur.')
+      else setError(json.message ?? 'Une erreur est survenue.')
+    })
+  }
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4"
+      onClick={(e) => { if (e.target === e.currentTarget && !isPending) onClose() }}>
+      <div className="w-full max-w-sm rounded-xl border border-border bg-card shadow-xl">
+        <div className="flex items-center justify-between border-b border-border px-4 py-3">
+          <h2 className="text-sm font-medium text-foreground">Réinitialiser le mot de passe</h2>
+          <button onClick={onClose} disabled={isPending} className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-accent shrink-0 disabled:opacity-40">
+            <X size={14} />
+          </button>
+        </div>
+
+        <div className="flex flex-col gap-4 p-4">
+          <p className="text-sm text-muted-foreground">
+            Un mot de passe provisoire va être généré et envoyé par email à{' '}
+            <span className="font-medium text-foreground">{userName}</span>. Cette action va :
+          </p>
+          <ul className="list-disc pl-5 text-sm text-muted-foreground space-y-1">
+            <li>déconnecter immédiatement toutes ses sessions actives ;</li>
+            <li>lui envoyer un nouveau mot de passe provisoire par email (vous ne le verrez jamais) ;</li>
+            <li>le forcer à changer ce mot de passe à sa prochaine connexion.</li>
+          </ul>
+
+          {error && (
+            <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>
+          )}
+
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="secondary" onClick={onClose} disabled={isPending}>
+              Annuler
+            </Button>
+            <Button type="button" variant="destructive" onClick={confirmReset} disabled={isPending}>
+              {isPending ? 'Envoi…' : 'Confirmer la réinitialisation'}
+            </Button>
+          </div>
         </div>
       </div>
     </div>

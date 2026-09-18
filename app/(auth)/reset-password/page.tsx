@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, Suspense } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import {
@@ -23,11 +23,46 @@ function ResetPasswordForm() {
   const [password, setPassword] = useState('')
   const [isPending, setIsPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [tokenStatus, setTokenStatus] = useState<'checking' | 'valid' | 'invalid'>(
+    token ? 'checking' : 'invalid'
+  )
 
   const strength = pwStrength(password)
   const isValid = pwValid(password)
 
-  if (!token) {
+  useEffect(() => {
+    if (!token) return
+
+    let cancelled = false
+    ;(async () => {
+      try {
+        const res = await fetch('/api/auth/verify-reset-token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token }),
+        })
+        if (!cancelled) setTokenStatus(res.ok ? 'valid' : 'invalid')
+      } catch {
+        if (!cancelled) setTokenStatus('invalid')
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [token])
+
+  if (tokenStatus === 'checking') {
+    return (
+      <Card className="w-full max-w-sm">
+        <CardHeader>
+          <CardTitle>Vérification du lien…</CardTitle>
+        </CardHeader>
+      </Card>
+    )
+  }
+
+  if (tokenStatus === 'invalid') {
     return (
       <Card className="w-full max-w-sm">
         <CardHeader>
@@ -67,7 +102,7 @@ function ResetPasswordForm() {
       const res = await fetch('/api/auth/reset-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, password }),
+        body: JSON.stringify({ password }),
       })
 
       if (!res.ok) {

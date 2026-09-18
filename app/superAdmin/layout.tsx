@@ -6,18 +6,19 @@ import { useAuth } from '@/src/context/auth-context'
 import Header from '@/src/layouts/header'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
-import { Activity, Building2, HelpCircle, Home, Newspaper, Receipt, Shield, Users, Zap } from 'lucide-react'
+import { Activity, Building2, FileText, HelpCircle, Home, Newspaper, Receipt, Shield, Users, Zap } from 'lucide-react'
 
 const SA_NAV = [
-  { label: 'Tableau de bord', href: '/superAdmin',              icon: Home      },
-  { label: 'Associations',    href: '/superAdmin/associations', icon: Building2 },
-  { label: 'Utilisateurs',    href: '/superAdmin/users',        icon: Users     },
-  { label: 'Facturation',     href: '/superAdmin/billing',      icon: Receipt   },
-  { label: 'Plans',           href: '/superAdmin/plans',        icon: Zap       },
-  { label: 'Rôles',           href: '/superAdmin/roles',        icon: Shield    },
-  { label: 'Rate Limits',     href: '/superAdmin/rate-limits',  icon: Activity  },
-  { label: 'Nouveautés',      href: '/superAdmin/news',         icon: Newspaper  },
-  { label: 'Aide',           href: '/superAdmin/aide',         icon: HelpCircle },
+  { label: 'Tableau de bord', href: '/superAdmin',                   icon: Home       },
+  { label: 'Associations',    href: '/superAdmin/associations',      icon: Building2  },
+  { label: 'Utilisateurs',    href: '/superAdmin/users',             icon: Users      },
+  { label: 'Demandes RGPD',   href: '/superAdmin/account-requests',  icon: FileText   },
+  { label: 'Facturation',     href: '/superAdmin/billing',           icon: Receipt    },
+  { label: 'Plans',           href: '/superAdmin/plans',             icon: Zap        },
+  { label: 'Rôles',           href: '/superAdmin/roles',             icon: Shield     },
+  { label: 'Rate Limits',     href: '/superAdmin/rate-limits',       icon: Activity   },
+  { label: 'Nouveautés',      href: '/superAdmin/news',              icon: Newspaper  },
+  { label: 'Aide',            href: '/superAdmin/aide',              icon: HelpCircle },
 ]
 
 export default function SuperAdminLayout({ children }: { children: React.ReactNode }) {
