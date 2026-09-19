@@ -3,11 +3,12 @@
 import { apiFetch } from '@/src/lib/api-client'
 import { useCallback, useEffect, useState, useTransition } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { KeyRound, Loader2, Trash2, Users, X } from 'lucide-react'
+import { KeyRound, Loader2, Pencil, ShieldAlert, Trash2, Users, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
 import { useAuth } from '@/src/context/auth-context'
 import { DeletionCodeModal } from '@/components/DeletionCodeModal'
-import type { Member, MemberDetailResponse } from '@/src/types/member'
+import type { Member, MemberDetail, MemberDetailResponse, MemberRole } from '@/src/types/member'
 
 export default function SuperAdminUsersPage() {
   const searchParams = useSearchParams()
@@ -141,6 +142,7 @@ function UserDetailModal({ userId, onClose, onFeedback, onDeleted }: {
   const [isLoading, setIsLoading] = useState(true)
   const [isConfirmingReset, setIsConfirmingReset] = useState(false)
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false)
+  const [isChangingRole, setIsChangingRole] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -217,8 +219,20 @@ function UserDetailModal({ userId, onClose, onFeedback, onDeleted }: {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Rôle</span>
-                  <span className="text-foreground">
-                    {data.role?.name ?? (isPendingCandidate ? 'Candidat en attente' : '—')}
+                  <span className="flex items-center gap-1.5">
+                    <span className="text-foreground">
+                      {data.role?.name ?? (isPendingCandidate ? 'Candidat en attente' : '—')}
+                    </span>
+                    {user.associationId && (
+                      <button
+                        type="button"
+                        onClick={() => setIsChangingRole(true)}
+                        title="Changer le rôle"
+                        className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                      >
+                        <Pencil size={11} />
+                      </button>
+                    )}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
@@ -294,6 +308,20 @@ function UserDetailModal({ userId, onClose, onFeedback, onDeleted }: {
           setIsConfirmingReset(false)
           onClose()
           onFeedback({ message: msg, type: 'success' })
+        }}
+      />
+    )}
+
+    {isChangingRole && user && user.associationId && (
+      <ChangeRoleModal
+        userId={userId}
+        associationId={user.associationId}
+        currentRoleKey={user.associationRoleKey}
+        onClose={() => setIsChangingRole(false)}
+        onChanged={(updatedUser, role, message) => {
+          setData((prev) => (prev ? { ...prev, user: updatedUser, role } : prev))
+          setIsChangingRole(false)
+          onFeedback({ message, type: 'success' })
         }}
       />
     )}
@@ -375,6 +403,160 @@ function ResetPasswordModal({ userId, userName, onClose, onSuccess }: {
               {isPending ? 'Envoi…' : 'Confirmer la réinitialisation'}
             </Button>
           </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── ChangeRoleModal ────────────────────────────────────────
+
+interface RoleSetOption {
+  key: string
+  name: string
+  isActive: boolean
+  isSystem: boolean
+}
+
+function ChangeRoleModal({ userId, associationId, currentRoleKey, onClose, onChanged }: {
+  userId: string
+  associationId: string
+  currentRoleKey: string | null
+  onClose: () => void
+  onChanged: (updatedUser: MemberDetail, role: MemberRole, message: string) => void
+}) {
+  const [roles, setRoles] = useState<RoleSetOption[] | null>(null)
+  const [isLoadingRoles, setIsLoadingRoles] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [selectedKey, setSelectedKey] = useState('')
+  const [confirmingAdmin, setConfirmingAdmin] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
+  const [isPending, startTransition] = useTransition()
+
+  const loadRoles = useCallback(() => {
+    setIsLoadingRoles(true)
+    setLoadError(null)
+    apiFetch(`/super-admin/roles/${associationId}`)
+      .then(async (res) => {
+        const json = await res.json().catch(() => ({}))
+        if (!res.ok) { setLoadError(json.message ?? "Impossible de charger les rôles de cette association."); return }
+        const active: RoleSetOption[] = (json.data?.association?.roles ?? []).filter((r: RoleSetOption) => r.isActive)
+        setRoles(active)
+        setSelectedKey((prev) => prev || currentRoleKey || active[0]?.key || '')
+      })
+      .catch(() => setLoadError('Impossible de joindre le serveur.'))
+      .finally(() => setIsLoadingRoles(false))
+  }, [associationId, currentRoleKey])
+
+  useEffect(() => { loadRoles() }, [loadRoles])
+
+  const selectedRole = roles?.find((r) => r.key === selectedKey) ?? null
+  const hasChanged = !!selectedRole && selectedKey !== currentRoleKey
+  const isElevatingToAdmin = hasChanged && !!selectedRole?.isSystem && selectedRole.name.trim().toLowerCase() === 'admin'
+
+  function attemptSubmit() {
+    if (!selectedRole || !hasChanged) return
+    setSubmitError(null)
+    if (isElevatingToAdmin && !confirmingAdmin) {
+      setConfirmingAdmin(true)
+      return
+    }
+    startTransition(async () => {
+      const res = await apiFetch(`/super-admin/users/${userId}/change-role`, {
+        method: 'PATCH',
+        body: JSON.stringify({ roleId: selectedRole.key }),
+      })
+      const json = await res.json().catch(() => ({}))
+      if (res.ok) {
+        onChanged(json.data.user, { key: selectedRole.key, name: selectedRole.name }, json.message ?? `Rôle modifié en "${selectedRole.name}".`)
+      } else {
+        setSubmitError(json.message ?? 'Une erreur est survenue.')
+        setConfirmingAdmin(false)
+      }
+    })
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4"
+      onClick={(e) => { if (e.target === e.currentTarget && !isPending) onClose() }}
+    >
+      <div className="w-full max-w-sm rounded-xl border border-border bg-card shadow-xl">
+        <div className="flex items-center justify-between border-b border-border px-4 py-3">
+          <h2 className="text-sm font-medium text-foreground">Changer le rôle</h2>
+          <button onClick={onClose} disabled={isPending} className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-accent shrink-0 disabled:opacity-40">
+            <X size={14} />
+          </button>
+        </div>
+
+        <div className="flex flex-col gap-4 p-4">
+          {isLoadingRoles ? (
+            <div className="flex items-center justify-center py-6">
+              <Loader2 size={18} className="animate-spin text-muted-foreground" />
+            </div>
+          ) : loadError ? (
+            <div className="flex flex-col gap-2">
+              <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{loadError}</p>
+              <Button type="button" variant="secondary" size="sm" onClick={loadRoles} className="self-start">Réessayer</Button>
+            </div>
+          ) : confirmingAdmin ? (
+            <>
+              <div className="flex items-start gap-2 rounded-lg bg-amber-50 px-3 py-2.5 text-sm text-amber-800">
+                <ShieldAlert size={16} className="mt-0.5 shrink-0" />
+                <p>
+                  Vous êtes sur le point d&apos;accorder le rôle <strong>{selectedRole?.name}</strong> à cet
+                  utilisateur — une élévation de privilège complète sur son association. Confirmez pour continuer.
+                </p>
+              </div>
+              {submitError && <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{submitError}</p>}
+              <div className="flex justify-end gap-2">
+                <Button type="button" variant="secondary" onClick={() => setConfirmingAdmin(false)} disabled={isPending}>
+                  Annuler
+                </Button>
+                <Button type="button" variant="destructive" onClick={attemptSubmit} disabled={isPending}>
+                  {isPending ? 'Modification…' : `Confirmer — Accorder ${selectedRole?.name}`}
+                </Button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="grid gap-1.5">
+                <Label htmlFor="role-select">Rôle</Label>
+                <select
+                  id="role-select"
+                  value={selectedKey}
+                  onChange={(e) => setSelectedKey(e.target.value)}
+                  disabled={isPending || !roles || roles.length === 0}
+                  className="h-9 w-full rounded-md border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring"
+                >
+                  {roles?.length === 0 && <option value="">Aucun rôle assignable</option>}
+                  {roles?.map((r) => (
+                    <option key={r.key} value={r.key}>
+                      {r.name}{r.key === currentRoleKey ? ' (actuel)' : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {submitError && (
+                <div className="flex flex-col gap-2">
+                  <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{submitError}</p>
+                  <button type="button" onClick={loadRoles} className="self-start text-xs text-primary hover:underline">
+                    Recharger la liste des rôles
+                  </button>
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2">
+                <Button type="button" variant="secondary" onClick={onClose} disabled={isPending}>
+                  Annuler
+                </Button>
+                <Button type="button" onClick={attemptSubmit} disabled={isPending || !hasChanged}>
+                  {isPending ? 'Modification…' : 'Changer le rôle'}
+                </Button>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
