@@ -3,9 +3,10 @@ import { API_URL } from '@/src/lib/api-config'
 import { z } from 'zod'
 
 const Schema = z.object({
-  token:    z.string().min(1),
   password: z.string().min(12).max(128),
 })
+
+const RESET_SESSION_COOKIE = 'sigma_reset_session'
 
 export async function POST(req: NextRequest) {
   const body  = await req.json().catch(() => null)
@@ -14,11 +15,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'INVALID_INPUT' }, { status: 400 })
   }
 
+  const rawToken = req.cookies.get(RESET_SESSION_COOKIE)?.value
+  if (!rawToken) {
+    return NextResponse.json({ error: 'TOKEN_INVALID' }, { status: 422 })
+  }
+
   let res: Response
   try {
     res = await fetch(`${API_URL}/auth/reset-password`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        // Le backend lit le token depuis ce cookie (S14), pas depuis le body.
+        Cookie: `${RESET_SESSION_COOKIE}=${rawToken}`,
+      },
       body: JSON.stringify(parsed.data),
     })
   } catch {
@@ -26,5 +36,11 @@ export async function POST(req: NextRequest) {
   }
 
   const json = await res.json()
-  return NextResponse.json(json, { status: res.status })
+  const response = NextResponse.json(json, { status: res.status })
+
+  if (res.ok) {
+    response.cookies.delete(RESET_SESSION_COOKIE)
+  }
+
+  return response
 }

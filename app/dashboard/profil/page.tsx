@@ -21,6 +21,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { PersonalDataRequestsSection } from '@/components/account-requests/PersonalDataRequestsSection'
 
 import { formatDate } from '@/src/lib/date-utils'
 
@@ -222,34 +223,43 @@ export default function ProfilPage() {
         </div>
       </div>
 
+      {/* ── Mes données personnelles (RGPD) ──────────────── */}
+      {association && <PersonalDataRequestsSection isAdmin={!!p?.isAdmin} />}
+
       {/* ── Zone dangereuse ─────────────────────────────── */}
-      <div className="rounded-xl border border-destructive/30 bg-card overflow-hidden">
-        <div className="px-5 py-4 border-b border-destructive/20">
-          <div className="flex items-center gap-2">
-            <AlertTriangle size={16} className="text-destructive" />
-            <p className="text-sm font-medium text-destructive">Zone dangereuse</p>
+      {/* Réservée aux comptes sans association : pour un membre rattaché à
+          une association, la suppression passe par le circuit RGPD ci-dessus
+          (validation admin + anonymisation) plutôt que par une suppression
+          immédiate et unilatérale. */}
+      {!association && (
+        <div className="rounded-xl border border-destructive/30 bg-card overflow-hidden">
+          <div className="px-5 py-4 border-b border-destructive/20">
+            <div className="flex items-center gap-2">
+              <AlertTriangle size={16} className="text-destructive" />
+              <p className="text-sm font-medium text-destructive">Zone dangereuse</p>
+            </div>
+          </div>
+
+          <div>
+            <button
+              onClick={() => setOpen(open === 'delete' ? null : 'delete')}
+              className="flex w-full items-center justify-between px-5 py-4 hover:bg-destructive/5 transition-colors text-left"
+            >
+              <div>
+                <p className="text-sm font-medium text-foreground">Supprimer mon compte</p>
+                <p className="text-xs text-muted-foreground">Cette action est irréversible. Toutes vos données seront supprimées.</p>
+              </div>
+              <span className="text-xs text-destructive font-medium shrink-0 ml-4">{open === 'delete' ? 'Annuler' : 'Supprimer'}</span>
+            </button>
+            {open === 'delete' && (
+              <DeleteAccountForm
+                onDeleted={async () => { await logout(); window.location.href = '/login' }}
+                onCancel={() => setOpen(null)}
+              />
+            )}
           </div>
         </div>
-
-        <div>
-          <button
-            onClick={() => setOpen(open === 'delete' ? null : 'delete')}
-            className="flex w-full items-center justify-between px-5 py-4 hover:bg-destructive/5 transition-colors text-left"
-          >
-            <div>
-              <p className="text-sm font-medium text-foreground">Supprimer mon compte</p>
-              <p className="text-xs text-muted-foreground">Cette action est irréversible. Toutes vos données seront supprimées.</p>
-            </div>
-            <span className="text-xs text-destructive font-medium shrink-0 ml-4">{open === 'delete' ? 'Annuler' : 'Supprimer'}</span>
-          </button>
-          {open === 'delete' && (
-            <DeleteAccountForm
-              onDeleted={async () => { await logout(); window.location.href = '/login' }}
-              onCancel={() => setOpen(null)}
-            />
-          )}
-        </div>
-      </div>
+      )}
     </div>
   )
 }

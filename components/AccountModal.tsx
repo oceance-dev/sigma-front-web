@@ -13,6 +13,7 @@ import {
   CreditCard,
   Download,
   ExternalLink,
+  FileText,
   FileX,
   HelpCircle,
   KeyRound,
@@ -35,12 +36,13 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { formatDate, formatMonth } from '@/src/lib/date-utils'
+import { PersonalDataRequestsSection } from '@/components/account-requests/PersonalDataRequestsSection'
 import type { BillingPlan, Invoice } from '@/src/types/billing'
 
 // ── Types & données statiques ──────────────────────────────
 
 type SectionId =
-  | 'profil' | 'parametres' | 'abonnement' | 'factures'
+  | 'profil' | 'donnees' | 'parametres' | 'abonnement' | 'factures'
   | 'nouveautes' | 'aide' | 'support' | 'logout'
 
 interface SectionItem {
@@ -51,8 +53,13 @@ interface SectionItem {
   danger?: boolean
 }
 
+// 'donnees' (RGPD) n'est PAS adminOnly : un admin d'association doit pouvoir demander
+// l'accès à SES PROPRES données exactement comme un membre — seul le traitement des
+// demandes des AUTRES (approuver/rejeter) est réservé aux admins, ailleurs (onglet
+// association / panel super-admin), pas ici.
 const SECTIONS: SectionItem[] = [
   { id: 'profil',      label: 'Mon profil',            icon: <User        size={16} /> },
+  { id: 'donnees',     label: 'Mes données (RGPD)',    icon: <FileText    size={16} /> },
   { id: 'parametres',  label: 'Paramètres',            icon: <Settings    size={16} /> },
   { id: 'abonnement',  label: 'Abonnement',            icon: <CreditCard  size={16} />, adminOnly: true },
   { id: 'factures',    label: 'Mes factures',          icon: <Receipt     size={16} />, adminOnly: true },
@@ -351,6 +358,20 @@ function ChangePasswordForm({ onSaved, onCancel }: { onSaved: () => void; onCanc
         <Button type="submit" disabled={isPending}>{isPending ? 'Modification…' : 'Changer'}</Button>
       </div>
     </form>
+  )
+}
+
+// ══════════════════════════════════════════════════════════
+// SECTION : MES DONNÉES (RGPD)
+// ══════════════════════════════════════════════════════════
+
+function DonneesSection() {
+  const { user } = useAuth()
+  return (
+    <>
+      <SectionHeader title="Mes données (RGPD)" description="Demandez l'accès à vos données personnelles (Art. 15), leur suppression, ou suivez vos demandes en cours." />
+      <PersonalDataRequestsSection isAdmin={!!user?.isAdmin} />
+    </>
   )
 }
 
@@ -860,7 +881,7 @@ function LogoutSection({ onLogout, isPending }: { onLogout: () => void; isPendin
 // ══════════════════════════════════════════════════════════
 
 export function AccountModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
-  const { user, logout } = useAuth()
+  const { user, association, logout } = useAuth()
   const [active, setActive] = useState<SectionId>('profil')
   const [isPending, startTransition] = useTransition()
 
@@ -873,7 +894,11 @@ export function AccountModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
 
   if (!isOpen) return null
 
-  const visibleSections = SECTIONS.filter(s => !s.adminOnly || user?.isAdmin)
+  // RGPD self-service suppose une association (modèle account-requests scopé dessus) —
+  // absente uniquement pour un compte super-admin plateforme sans association propre.
+  const visibleSections = SECTIONS.filter(s =>
+    (!s.adminOnly || user?.isAdmin) && (s.id !== 'donnees' || !!association)
+  )
   const initials = user ? `${user.firstName[0]}${user.lastName[0]}`.toUpperCase() : '?'
 
   function handleLogout() {
@@ -931,6 +956,7 @@ export function AccountModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
 
           <div className="flex-1 overflow-y-auto p-6">
             {active === 'profil'     && <ProfilSection />}
+            {active === 'donnees'    && <DonneesSection />}
             {active === 'parametres' && <ParametresSection />}
             {active === 'abonnement' && <AbonnementSection />}
             {active === 'factures'   && <FacturesSection />}

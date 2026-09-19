@@ -14,7 +14,10 @@ interface StepUpModalProps {
 
 export function StepUpModal({ isSending, sendError, verifyError, isPending, onSubmitCode, onCancel }: StepUpModalProps) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onCancel}>
+    // z-[100] : cette modale peut être déclenchée depuis n'importe quel écran, y compris
+    // par-dessus une modale de confirmation déjà ouverte à z-[60] (ex. reset password) —
+    // elle doit donc toujours s'afficher au-dessus de tout le reste de l'app.
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4" onClick={onCancel}>
       <div
         className="w-full max-w-sm rounded-xl border border-border bg-card shadow-xl"
         onClick={(e) => e.stopPropagation()}
