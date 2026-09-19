@@ -17,6 +17,13 @@ IMAGE="ghcr.io/oceance-dev/sigma-front-web:latest"
 LOG_DIR="/home/sigma/sigma-front-web/logs"
 LOG="$LOG_DIR/deploy.log"
 
+LOCKFILE="/var/lock/sigma-docker-pull.lock"
+exec 200>"$LOCKFILE"
+if ! flock -w 300 200; then
+  echo "impossible d'obtenir le verrou docker pull (timeout)" >&2
+  exit 1
+fi
+
 mkdir -p "$LOG_DIR"
 cd "$REPO_DIR"
 
