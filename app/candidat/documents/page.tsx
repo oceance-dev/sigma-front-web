@@ -238,7 +238,8 @@ export default function CandidatDocumentsPage() {
 
   const remaining = (completion?.total ?? 0) - (completion?.completed ?? 0)
   // Garde-fou local : tous les documents obligatoires doivent avoir été fournis
-  const missingRequired = requirements.filter((r) => r.isRequired && !r.status.uploaded).length
+  // (les documents médicaux sont envoyés par courrier, pas via la plateforme)
+  const missingRequired = requirements.filter((r) => r.isRequired && r.category !== 'medical' && !r.status.uploaded).length
   const canReallySubmit = canSubmit && missingRequired === 0
 
   return (
@@ -482,6 +483,7 @@ function RequirementRow({
   const inputRef = useRef<HTMLInputElement>(null)
   const { uploaded, documentStatus, documentName, uploadedAt } = req.status
   const accept = req.allowedExtensions.map((e) => `.${e}`).join(',')
+  const isMedical = req.category === 'medical'
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -563,47 +565,65 @@ function RequirementRow({
           </div>
         )}
 
-        <p className="text-xs text-muted-foreground mt-1">
-          {req.allowedExtensions.join(', ').toUpperCase()} · max {fmtSize(req.maxFileSize)}
-        </p>
+        {isMedical ? (
+          <div className="flex items-start gap-1.5 mt-1.5 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-2">
+            <Mail size={12} className="text-amber-600 shrink-0 mt-0.5" />
+            <p className="text-xs text-amber-800">
+              Ce document ne peut pas être déposé en ligne pour des raisons de confidentialité des données de santé.
+              Merci de l'envoyer <strong>par courrier postal</strong> à l'adresse de votre association.
+            </p>
+          </div>
+        ) : (
+          <p className="text-xs text-muted-foreground mt-1">
+            {req.allowedExtensions.join(', ').toUpperCase()} · max {fmtSize(req.maxFileSize)}
+          </p>
+        )}
       </div>
 
       {/* Action */}
       <div className="shrink-0 mt-0.5">
-        <input
-          ref={inputRef}
-          type="file"
-          accept={accept}
-          onChange={handleChange}
-          className="hidden"
-        />
-        {uploadBlocked ? (
-          <span
-            title="Aucune campagne active — les dépôts de documents sont fermés"
-            className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium bg-muted text-muted-foreground cursor-not-allowed select-none"
-          >
-            <Lock size={12} /> Fermé
+        {isMedical ? (
+          <span className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium bg-muted text-muted-foreground select-none">
+            <Mail size={12} /> Par courrier
           </span>
         ) : (
-          <button
-            onClick={() => inputRef.current?.click()}
-            disabled={disabled}
-            className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition-colors disabled:opacity-40 ${
-              uploaded && documentStatus === 'rejected'
-                ? 'bg-destructive/10 text-destructive hover:bg-destructive/20'
-                : uploaded
-                ? 'bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground'
-                : 'bg-primary text-primary-foreground hover:bg-primary/90'
-            }`}
-          >
-            {isUploading ? (
-              <><Loader2 size={12} className="animate-spin" /> Envoi…</>
-            ) : uploaded ? (
-              <><RefreshCw size={12} /> Remplacer</>
+          <>
+            <input
+              ref={inputRef}
+              type="file"
+              accept={accept}
+              onChange={handleChange}
+              className="hidden"
+            />
+            {uploadBlocked ? (
+              <span
+                title="Aucune campagne active — les dépôts de documents sont fermés"
+                className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium bg-muted text-muted-foreground cursor-not-allowed select-none"
+              >
+                <Lock size={12} /> Fermé
+              </span>
             ) : (
-              <><Upload size={12} /> Envoyer</>
+              <button
+                onClick={() => inputRef.current?.click()}
+                disabled={disabled}
+                className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition-colors disabled:opacity-40 ${
+                  uploaded && documentStatus === 'rejected'
+                    ? 'bg-destructive/10 text-destructive hover:bg-destructive/20'
+                    : uploaded
+                    ? 'bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground'
+                    : 'bg-primary text-primary-foreground hover:bg-primary/90'
+                }`}
+              >
+                {isUploading ? (
+                  <><Loader2 size={12} className="animate-spin" /> Envoi…</>
+                ) : uploaded ? (
+                  <><RefreshCw size={12} /> Remplacer</>
+                ) : (
+                  <><Upload size={12} /> Envoyer</>
+                )}
+              </button>
             )}
-          </button>
+          </>
         )}
       </div>
     </div>

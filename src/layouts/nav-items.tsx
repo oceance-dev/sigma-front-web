@@ -1,4 +1,4 @@
-import { ClipboardList, FileText, GraduationCap, HeartPulse, Home, Users, Wallet } from "lucide-react";
+import { ClipboardList, FileText, GraduationCap, Home, Users, Wallet } from "lucide-react";
 
 export interface NavItem {
   id?: string
@@ -8,7 +8,6 @@ export interface NavItem {
   cadetOnly?: boolean
   staffOnly?: boolean
   gendarmerieOnly?: boolean
-  requiresSanitaire?: boolean
   permission?: string
   hidden?: boolean
 }
@@ -44,14 +43,6 @@ export const navItems: NavItem[] = [
     icon: <ClipboardList size={18} />,
     staffOnly: true,
     gendarmerieOnly: true,
-  },
-  {
-    label: "Sanitaire",
-    href: "/dashboard/sanitaire",
-    icon: <HeartPulse size={18} />,
-    staffOnly: true,
-    gendarmerieOnly: true,
-    requiresSanitaire: true,
   },
   {
     label: "Trésorerie",
