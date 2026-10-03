@@ -8,6 +8,7 @@ import {
   ChevronUp,
   FileText,
   Loader2,
+  Mail,
   Pencil,
   Plus,
   RefreshCw,
@@ -336,6 +337,16 @@ export default function DocumentsRequisTab() {
             Ajouter
           </Button>
         </div>
+      </div>
+
+      {/* ── Notice documents de santé ─────────────────────── */}
+      <div className="flex items-start gap-2.5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+        <Mail size={15} className="text-amber-600 shrink-0 mt-0.5" />
+        <p className="text-xs text-amber-800">
+          <strong>Documents de santé :</strong> pour protéger la confidentialité des données de santé, aucun document de
+          cette nature n'est déposé en ligne par le candidat. À la place de la zone de dépôt habituelle, un simple
+          message lui indique d'envoyer le document par courrier postal à l'association.
+        </p>
       </div>
 
       {/* ── Feedback ────────────────────────────────────── */}
