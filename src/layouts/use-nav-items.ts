@@ -9,7 +9,6 @@ export function useNavItems() {
   const { user, association, hasPermission } = useAuth()
   const isAdmin           = !!user?.isAdmin
   const isGendarmerie     = association?.type === 'gendarmerie'
-  const sanitaireEnabled  = !!association?.sanitaireEnabled
 
   return navItems
     .filter((item) => {
@@ -17,7 +16,6 @@ export function useNavItems() {
       // staffOnly = réservé aux admins, sauf si une permission spécifique y donne accès
       if (item.staffOnly && !isAdmin && !(item.permission && hasPermission(item.permission))) return false
       if (item.gendarmerieOnly && !isGendarmerie) return false
-      if (item.requiresSanitaire && !sanitaireEnabled) return false
       return true
     })
     .map((item) => ({
