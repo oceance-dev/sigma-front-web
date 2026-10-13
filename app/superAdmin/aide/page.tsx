@@ -66,7 +66,7 @@ function Toggle({ value, onChange, disabled }: { value: boolean; onChange: (v: b
       disabled={disabled}
       className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${value ? 'bg-primary' : 'bg-muted-foreground/30'}`}
     >
-      <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${value ? 'translate-x-4' : 'translate-x-0.5'}`} />
+      <span className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${value ? 'translate-x-4' : 'translate-x-0.5'}`} />
     </button>
   )
 }
