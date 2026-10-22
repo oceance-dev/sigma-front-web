@@ -1,14 +1,24 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import dynamic from 'next/dynamic'
 import { apiFetch } from '@/src/lib/api-client'
 import { tokenStore } from '@/src/lib/token-store'
 import type { Document } from '@/src/types/document'
 import { AlertCircle, Download, FileSpreadsheet, FileText, FileType, Loader2, X, ZoomIn, ZoomOut } from 'lucide-react'
 
+const DocxEditorPanel = dynamic(() => import('@/components/DocxEditorPanel'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-full w-full items-center justify-center bg-white">
+      <Loader2 size={28} className="animate-spin text-muted-foreground" />
+    </div>
+  ),
+})
+
 // ── Types de fichiers ──────────────────────────────────────
 
-type FileKind = 'image' | 'pdf' | 'spreadsheet' | 'other'
+type FileKind = 'image' | 'pdf' | 'spreadsheet' | 'word' | 'other'
 
 function fileKind(mimeType: string, ext: string): FileKind {
   if (mimeType.startsWith('image/')) return 'image'
@@ -18,6 +28,11 @@ function fileKind(mimeType: string, ext: string): FileKind {
     mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
     ['xls', 'xlsx', 'csv', 'ods'].includes(ext.toLowerCase())
   ) return 'spreadsheet'
+  if (
+    mimeType === 'application/msword' ||
+    mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+    ['doc', 'docx'].includes(ext.toLowerCase())
+  ) return 'word'
   return 'other'
 }
 
@@ -47,15 +62,14 @@ function fileMeta(mimeType: string, ext: string): FileMeta {
   return { label: ext ? ext.toUpperCase() : 'Fichier', color: 'text-muted-foreground', bg: 'bg-muted/40', icon: <FileText size={40} strokeWidth={1.2} /> }
 }
 
-async function fetchBlobUrl(id: string, mimeType: string, viewUrl?: string): Promise<string | null> {
+async function fetchArrayBuffer(id: string, viewUrl?: string): Promise<ArrayBuffer | null> {
   const token = tokenStore.get()
   const url   = viewUrl ?? `/api/documents/view/${id}`
   const res   = await fetch(url, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   })
   if (!res.ok) return null
-  const blob = new Blob([await res.arrayBuffer()], { type: mimeType })
-  return URL.createObjectURL(blob)
+  return res.arrayBuffer()
 }
 
 // ── Composant ──────────────────────────────────────────────
@@ -65,28 +79,55 @@ export default function DocumentViewerModal({
   onClose,
   onDownload,
   viewUrl,
+  canEdit = false,
+  onSaved,
 }: {
   doc: Document
   onClose: () => void
   onDownload: () => void
   viewUrl?: string
+  /** Autorise l'édition en place du .docx (mode='edit' au lieu de 'view'). */
+  canEdit?: boolean
+  /** Appelé après une sauvegarde réussie du contenu édité, pour rafraîchir la liste. */
+  onSaved?: () => void
 }) {
-  const [url,     setUrl]     = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error,   setError]   = useState(false)
-  const [zoom,    setZoom]    = useState(1)
+  const [url,       setUrl]       = useState<string | null>(null)
+  const [wordBytes, setWordBytes] = useState<Uint8Array | null>(null)
+  const [loading,   setLoading]   = useState(true)
+  const [error,     setError]     = useState(false)
+  const [zoom,      setZoom]      = useState(1)
+  const [reloadTick, setReloadTick] = useState(0)
   const kind     = fileKind(doc.mimeType, doc.extension)
   const meta     = fileMeta(doc.mimeType, doc.extension)
   const imgRef   = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     let blobUrl: string | null = null
-    fetchBlobUrl(doc.id, doc.mimeType, viewUrl)
-      .then((u) => { blobUrl = u; u ? setUrl(u) : setError(true) })
+    let cancelled = false
+
+    setLoading(true)
+    setError(false)
+
+    fetchArrayBuffer(doc.id, viewUrl)
+      .then((buf) => {
+        if (cancelled) return
+        if (!buf) { setError(true); return }
+        if (kind === 'word') {
+          setWordBytes(new Uint8Array(buf))
+        } else {
+          const blob = new Blob([buf], { type: doc.mimeType })
+          blobUrl = URL.createObjectURL(blob)
+          setUrl(blobUrl)
+        }
+      })
       .catch(() => setError(true))
-      .finally(() => setLoading(false))
-    return () => { if (blobUrl) URL.revokeObjectURL(blobUrl) }
-  }, [doc.id])
+      .finally(() => { if (!cancelled) setLoading(false) })
+
+    return () => {
+      cancelled = true
+      if (blobUrl) URL.revokeObjectURL(blobUrl)
+    }
+  }, [doc.id, reloadTick])
 
   // Raccourcis clavier
   useEffect(() => {
@@ -176,7 +217,10 @@ export default function DocumentViewerModal({
       </div>
 
       {/* ── Contenu ────────────────────────────────────── */}
-      <div className="flex flex-1 items-center justify-center overflow-auto p-4">
+      <div className={kind === 'word' && !loading && !error
+        ? 'flex flex-1 overflow-hidden'
+        : 'flex flex-1 items-center justify-center overflow-auto p-4'}
+      >
 
         {loading && (
           <Loader2 size={32} className="animate-spin text-white/50" />
@@ -219,7 +263,18 @@ export default function DocumentViewerModal({
           />
         )}
 
-        {/* Formats non affichables (spreadsheet, docx, ppt…) */}
+        {!loading && !error && wordBytes && kind === 'word' && (
+          <DocxEditorPanel
+            key={reloadTick}
+            doc={doc}
+            bytes={wordBytes}
+            canEdit={canEdit}
+            onSaved={() => onSaved?.()}
+            onReload={() => setReloadTick((t) => t + 1)}
+          />
+        )}
+
+        {/* Formats non affichables (spreadsheet, ppt…) */}
         {!loading && !error && (kind === 'spreadsheet' || kind === 'other') && (
           <div className="flex flex-col items-center gap-5 text-center">
             <div className={`flex h-24 w-24 items-center justify-center rounded-2xl ${meta.bg}`}>

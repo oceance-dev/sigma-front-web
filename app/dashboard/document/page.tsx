@@ -691,6 +691,14 @@ export default function DocumentPage() {
           doc={viewingDoc}
           onClose={() => setViewingDoc(null)}
           onDownload={() => downloadDocument(viewingDoc.id)}
+          canEdit={!!user && (
+            isAdmin ||
+            !!user.isSuperAdmin ||
+            viewingDoc.userId === user.id ||
+            (viewingDoc.allowedUserIds?.includes(user.id) ?? false) ||
+            (viewingDoc.allowedRoles?.includes(user.associationRoleKey) ?? false)
+          )}
+          onSaved={reload}
         />
       )}
     </div>
