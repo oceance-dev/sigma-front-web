@@ -97,14 +97,19 @@ export default function DocxEditorPanel({
           title={doc.originalName}
           onSave={canEdit ? handleSave : undefined}
           menu={{
-            // Pas d'export tant qu'on n'a pas de convertisseur PDF/Markdown
-            // en place (packages payants, non installés) — sans ça ces
-            // entrées affichent juste une erreur au clic.
+            // Pas d'export tant qu'on n'a pas de convertisseur PDF/Markdown en
+            // place (packages payants, non installés). Le sous-menu "Export"
+            // n'est pas une ligne adressable individuellement dans le
+            // registre (seuls ExportPdf/ExportMarkdown le sont) : le cacher
+            // en `hidden` ne fait que vider son contenu, pas disparaître le
+            // sous-menu lui-même. On désactive donc le preset et on énumère
+            // les lignes de File qu'on garde, en omettant Export/Print.
             children: (
-              <DocxEditor.Menu.File>
-                <DocxEditor.Menu.ExportPdf hidden />
-                <DocxEditor.Menu.ExportMarkdown hidden />
-                <DocxEditor.Menu.Print hidden />
+              <DocxEditor.Menu.File preset={false}>
+                <DocxEditor.Menu.Open />
+                <DocxEditor.Menu.Save />
+                <DocxEditor.Menu.Separator />
+                <DocxEditor.Menu.PageSetup />
               </DocxEditor.Menu.File>
             ),
           }}
