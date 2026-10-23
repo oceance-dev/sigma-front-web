@@ -39,7 +39,10 @@ export async function GET(
     return new NextResponse(s3Res.body, {
       headers: {
         'Content-Type': s3Res.headers.get('Content-Type') ?? 'application/octet-stream',
-        'Cache-Control': 'private, max-age=300',
+        // Le contenu est mutable (édition docx en place) : pas de cache, sinon
+        // un refresh après sauvegarde reservirait l'ancienne version depuis le
+        // cache navigateur au lieu de la relire.
+        'Cache-Control': 'private, no-store',
       },
     })
   }
@@ -48,7 +51,7 @@ export async function GET(
   return new NextResponse(dlRes.body, {
     headers: {
       'Content-Type': dlRes.headers.get('Content-Type') ?? 'application/octet-stream',
-      'Cache-Control': 'private, max-age=300',
+      'Cache-Control': 'private, no-store',
     },
   })
 }
