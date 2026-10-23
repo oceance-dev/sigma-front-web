@@ -96,6 +96,18 @@ export default function DocxEditorPanel({
           mode={canEdit ? 'edit' : 'view'}
           title={doc.originalName}
           onSave={canEdit ? handleSave : undefined}
+          menu={{
+            // Pas d'export tant qu'on n'a pas de convertisseur PDF/Markdown
+            // en place (packages payants, non installés) — sans ça ces
+            // entrées affichent juste une erreur au clic.
+            children: (
+              <DocxEditor.Menu.File>
+                <DocxEditor.Menu.ExportPdf hidden />
+                <DocxEditor.Menu.ExportMarkdown hidden />
+                <DocxEditor.Menu.Print hidden />
+              </DocxEditor.Menu.File>
+            ),
+          }}
           className="h-full w-full"
         />
 
