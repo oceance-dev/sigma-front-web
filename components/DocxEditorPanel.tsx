@@ -11,7 +11,8 @@ const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingm
 
 type SaveStatus =
   | { kind: 'idle' }
-  | { kind: 'saving' }
+  | { kind: 'serializing' }
+  | { kind: 'uploading' }
   | { kind: 'conflict' }
   | { kind: 'error'; message: string }
 
@@ -33,10 +34,12 @@ export default function DocxEditorPanel({
   const [version, setVersion] = useState(doc.version)
 
   async function handleSave() {
-    const out = await editorRef.current?.save()
-    if (!out) return
+    setStatus({ kind: 'serializing' })
 
-    setStatus({ kind: 'saving' })
+    const out = await editorRef.current?.save()
+    if (!out) { setStatus({ kind: 'idle' }); return }
+
+    setStatus({ kind: 'uploading' })
 
     const fd = new FormData()
     fd.append('file', new Blob([out], { type: DOCX_MIME }), doc.originalName)
@@ -96,9 +99,12 @@ export default function DocxEditorPanel({
           className="h-full w-full"
         />
 
-        {status.kind === 'saving' && (
-          <div className="absolute inset-0 flex items-center justify-center bg-white/60">
+        {(status.kind === 'serializing' || status.kind === 'uploading') && (
+          <div className="absolute inset-0 flex items-center justify-center gap-2 bg-white/60">
             <Loader2 size={24} className="animate-spin text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">
+              {status.kind === 'serializing' ? 'Préparation du document…' : 'Envoi au serveur…'}
+            </span>
           </div>
         )}
       </div>
