@@ -5,10 +5,13 @@ import Image from 'next/image'
 import { Fraunces } from 'next/font/google'
 import logoSigmaWhite from '@/public/logo_sigma_white.png'
 import heroDashboard  from '@/public/hero-dashboard.png'
+import ecranMembres      from '@/public/ecran_view_membre_redacted.png'
+import ecranDocuments    from '@/public/ecran_document.png'
+import ecranRoles        from '@/public/ecran_role.png'
+import ecranOnboarding   from '@/public/ecran_ondboarding.png'
 import {
-  Users, FileText, FolderOpen, KeyRound,
-  CreditCard, Stamp, ArrowRight, Check, ListChecks, Plus,
-  HeartHandshake, CalendarCheck, MessageCircle, Layers,
+  FolderOpen, CreditCard, Stamp, ArrowRight, Check, ListChecks, Plus,
+  CalendarCheck, MessageCircle, Layers,
 } from 'lucide-react'
 import { COOKIE_REFRESH } from '@/src/lib/auth-cookies'
 import { buttonVariants } from '@/components/ui/button'
@@ -23,26 +26,34 @@ const fraunces = Fraunces({
 const CTA_HREF  = '/sigin'
 const CTA_LABEL = 'Démarrer l\'essai gratuit · 14 jours'
 
-const FEATURES = [
+const FEATURES_SHOWCASE = [
   {
-    icon: <Users size={22} />,
+    image: ecranMembres,
     title: 'Gestion des membres',
-    desc: "Profils, rôles, historique d'adhésion.",
+    desc: "Profils, rôles, historique d'adhésion. Vous savez toujours qui est membre, candidat ou encadrant.",
   },
   {
-    icon: <FileText size={22} />,
+    image: ecranDocuments,
     title: 'Dossiers documentaires',
-    desc: 'Statut en temps réel : validé, en attente, expiré.',
+    desc: 'Dossiers et documents organisés par type, avec leur statut à jour.',
   },
+  {
+    image: ecranRoles,
+    title: 'Rôles & permissions',
+    desc: "Chacun ne voit que ce qui le concerne : des rôles prêts à l'emploi (Trésorier, Secrétaire, Licencié...) ou créés sur mesure.",
+  },
+  {
+    image: ecranOnboarding,
+    title: 'Onboarding accompagné',
+    desc: 'Un guide pas à pas configure votre association avec vous, étape par étape.',
+  },
+]
+
+const FEATURES = [
   {
     icon: <ListChecks size={22} />,
     title: "Workflow d'adhésion",
     desc: "Une notification à chaque étape, personne ne reste sans réponse.",
-  },
-  {
-    icon: <KeyRound size={22} />,
-    title: 'Rôles & permissions',
-    desc: "Chacun ne voit que ce qui le concerne.",
   },
   {
     icon: <FolderOpen size={22} />,
@@ -58,11 +69,6 @@ const FEATURES = [
     icon: <Stamp size={22} />,
     title: 'Filigrane automatique',
     desc: 'Nom et date apposés sur chaque pièce téléversée.',
-  },
-  {
-    icon: <HeartHandshake size={22} />,
-    title: 'Onboarding accompagné',
-    desc: 'On configure votre association avec vous.',
   },
 ]
 
@@ -286,13 +292,25 @@ export default async function HomePage() {
               pour toute association loi 1901, du club de judo à la troupe de théâtre.
             </p>
 
-            <div className="grid gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-3 text-left">
+            <div className="grid gap-8 sm:grid-cols-2 text-left mb-12">
+              {FEATURES_SHOWCASE.map((f) => (
+                <div key={f.title}>
+                  <div className="mb-4 overflow-hidden rounded-xl border border-border shadow-md">
+                    <Image src={f.image} alt={f.title} className="w-full h-auto" />
+                  </div>
+                  <h3 className="font-semibold text-lg mb-1.5">{f.title}</h3>
+                  <p className="text-base text-muted-foreground leading-relaxed">{f.desc}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="grid gap-x-8 gap-y-10 border-t border-border pt-10 sm:grid-cols-2 lg:grid-cols-4 text-left">
               {FEATURES.map((f) => (
                 <div key={f.title} className="group">
                   <span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6">
                     {f.icon}
                   </span>
-                  <h3 className="font-semibold text-lg mt-4 mb-1.5">{f.title}</h3>
+                  <h3 className="font-semibold text-base mt-4 mb-1.5">{f.title}</h3>
                   <p className="text-base text-muted-foreground leading-relaxed">{f.desc}</p>
                 </div>
               ))}
